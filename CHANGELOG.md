@@ -2,6 +2,18 @@
 
 All notable public release-candidate changes for the Embedded Incident & Crash Recorder Framework are recorded here.
 
+## v1.0.0rc07 — 2026-08-21
+
+### Evidence / Documentation Closure
+
+- Regenerated `validation/rc05_to_rc06_scope.diff` as a standards-compliant unified diff that can be replayed with normal patch tooling.
+- Corrected the README public RC history ordering so rc05 precedes rc06 and rc07 follows rc06.
+- Clarified that prior-RC source manifests are the authoritative content-level provenance record; archive hashes are supplemental packaging evidence and may differ after repackaging.
+- Added rc06 content manifest and rc06→rc07 review-evidence metadata for independent delta review.
+- Advanced default framework build identity to `0x01000007`.
+- Updated target-validation identity from rc06 to rc07 while retaining all target results as `PENDING TARGET EVIDENCE`.
+- No recorder runtime API, runtime record schema, retained layout, persistence/export model, hot-path event flow, reference runtime, or linker behavior changed.
+
 ## v1.0.0rc06 — 2026-08-21
 
 ### Fixed

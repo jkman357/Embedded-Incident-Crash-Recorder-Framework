@@ -1,0 +1,51 @@
+EICRF v1.0.0rc07 Review Evidence
+
+Authoritative prior-RC content provenance:
+  validation/rc06_source_manifest.sha256
+    SHA-256 manifest of the exact extracted rc06 source package used to derive rc07.
+    This content manifest is the authority for prior-RC source identity.
+    Archive SHA-256 values are supplemental packaging evidence and may differ after byte-level repackaging.
+
+Historical evidence repair (rc06 finding RC06-F01):
+  validation/rc05_to_rc06_scope.diff
+    Regenerated in rc07 as a standards-compliant unified diff.
+    Verified with standard patch -p1 --dry-run and patch replay against the authoritative rc05 content baseline.
+    Replayed hand-maintained outputs match the original rc06 baseline byte-for-byte.
+    The semantic rc05-to-rc06 delta is unchanged.
+
+Current intended-scope delta:
+  validation/rc06_to_rc07_scope.diff
+    Standard unified diff covering rc07 hand-maintained specification/configuration changes,
+    the corrected historical scope-diff artifact, provenance clarification, and the new rc06 content manifest.
+    Verified with standard patch -p1 --dry-run and patch replay against the exact rc06 baseline.
+
+Runtime neutrality check relative to rc06:
+  src/: no file changes.
+  reference/: no file changes.
+  linker/: no file changes.
+  include/incident_recorder.h: no change.
+  include/incident_recorder_service.h: no change.
+  include/ir_config.h: only IR_BUILD_ID advanced from 0x01000006 to 0x01000007.
+  IR_SCHEMA_VERSION remains 0x0103.
+
+Host/source regression gate:
+  Release build/run: PASS
+  Development build/run: PASS
+  Recorder-OFF build/run: PASS
+  C99/C11 compatibility: PASS
+  Wide retry configuration: PASS
+  Hardening fixture: PASS
+  ASan/UBSan: PASS
+  Retained size/MAP gate: PASS
+  Lifecycle documentation/checklist presence: PASS
+
+Retained layout evidence:
+  sizeof(IR_RuntimeRecord)=24
+  IR_TASK_RECORD_COUNT=309
+  IR_ISR_RECORD_COUNT=104
+  IR_TOTAL_TIMELINE_RECORD_COUNT=413
+  sizeof(IR_RetainedStore)=10228
+  IR_RETAINED_RAM_BYTES=10240
+  retained_slack_bytes=12
+
+Target validation remains PENDING TARGET EVIDENCE.

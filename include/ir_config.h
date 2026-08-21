@@ -39,7 +39,7 @@
 #endif
 
 #ifndef IR_BUILD_ID
-#define IR_BUILD_ID (0x01000006UL)
+#define IR_BUILD_ID (0x01000007UL)
 #endif
 
 #ifndef IR_SCHEMA_VERSION

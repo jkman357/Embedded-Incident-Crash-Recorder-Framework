@@ -1,4 +1,4 @@
-Embedded Incident & Crash Recorder Framework v1.0.0rc06
+Embedded Incident & Crash Recorder Framework v1.0.0rc07
 Reference build compiler: gcc (Debian 14.2.0-19) 14.2.0
 
 + gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -ffunction-sections -fdata-sections -I./include -I./src -I./reference ./src/ir_core.c ./src/ir_service.c ./reference/ir_reference_project.c ./reference/main.c -Wl,-Map,./validation/reference_release.map -o ./build/release/ir_reference

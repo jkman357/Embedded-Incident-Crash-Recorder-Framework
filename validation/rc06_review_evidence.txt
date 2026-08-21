@@ -1,17 +1,21 @@
 EICRF v1.0.0rc06 Review Evidence
 
-Derivation baseline archive:
+Derivation baseline archive (supplemental packaging evidence):
   EICRF_v1.0.0rc05_Source.zip
   SHA-256: 51c690f83da664d694280c2fff6122b0c6850223e6c8c28806e649e4d77c0182
+  Archive-byte identity is not the authority for source provenance and may differ after repackaging.
 
-Content-independent provenance:
+Authoritative content provenance:
   validation/rc05_source_manifest.sha256
     SHA-256 manifest of the exact rc05 source tree used to derive rc06.
+    Independent review verified the prior reviewed rc05 source tree against this manifest 31/31.
 
-Reproducible intended-scope delta:
+Replayable intended-scope delta:
   validation/rc05_to_rc06_scope.diff
-    Unified diff for the hand-maintained specification/configuration files intentionally changed in rc06.
-    Generated validation outputs are excluded from this scope diff because rebuilding can change tool-generated paths/addresses without representing hand-edited source changes.
+    Standard unified diff for the hand-maintained specification/configuration files intentionally changed in rc06.
+    In rc07 this evidence artifact was regenerated without invalid separator lines and verified with standard patch --dry-run replay against the authoritative rc05 content baseline.
+    The semantic rc05-to-rc06 delta is unchanged.
+    Generated validation outputs are excluded because rebuilding can change tool-generated paths/addresses without representing hand-edited source changes.
 
 Runtime neutrality check:
   src/: no file changes relative to the rc05 derivation tree.

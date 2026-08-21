@@ -1,12 +1,12 @@
 # Embedded Incident & Crash Recorder Framework
 ## Low-Coupling Evidence, First-Abnormal-State, Survivability & Recovery Architecture
 
-**Version:** v1.0.0rc06
+**Version:** v1.0.0rc07
 **Status:** Target Validation Candidate — Probe Lifecycle Contract Added; Host Pre-Gate Complete; Target Evidence Pending
 **Date:** 2026-08-21  
 **Scope:** Generic embedded systems; independent of specific MCU, RTOS, storage medium, communication bus, motor controller, sensor, company, or product.
 
-**Release type:** Target-validation candidate RC. This RC preserves the hardened recorder runtime architecture, closes the rc05 diagnostics-lifecycle review findings, strengthens Permanent Monitor acceptance and Development Probe closure wording, refreshes lifecycle validation wording/evidence, and keeps all real-target results marked pending until measured on a concrete integration.
+**Release type:** Target-validation candidate RC. This RC preserves the hardened recorder runtime architecture, closes the rc06 evidence/documentation findings, repairs historical-diff replayability and RC-history ordering, clarifies content-level provenance, and keeps all real-target results marked pending until measured on a concrete integration.
 
 ---
 
@@ -47,8 +47,9 @@ This RC has **one canonical definition per topic**.
 | v1.0.0rc02 | 2026-08-21 | Minimal reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, persistence/export boundaries, Development trace queue, Release on-demand export, and host build/MAP/size validation. |
 | v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and contract closure: Development trace metadata self-protection, bounded two-slot persistent journal, interrupted-write recovery, persistence-pause loss accounting, dedicated fatal publication state, explicit publication barrier contract, full Recorder-OFF build gate, and sanitizer-backed hardening checks. |
 | v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline: closes rc03 Minor findings, strengthens host restart/identity behavior, separates persistence/export retry configuration, suppresses unpublished protected-snapshot copies, and adds explicit target-validation plan/checklist/results templates. Real target evidence remains pending. |
-| v1.0.0rc06 | 2026-08-21 | Closes rc05 lifecycle review findings: aligns the base Permanent Monitor contract and TV-LIFE-01 with stable semantics plus bounded RAM/persistence/export impact; clarifies that future Development Probe retention does not satisfy closure; narrows the host lifecycle gate to documentation/checklist presence evidence. |
 | v1.0.0rc05 | 2026-08-21 | Adds the normative diagnostics lifecycle contract: Permanent Monitors are intentional release diagnostics; Development Probes are temporary feature/defect instrumentation and must be removed at closure unless explicitly promoted after diagnostic-value and runtime-cost review. Target integration adds a probe inventory and Remove-or-Promote gate. |
+| v1.0.0rc06 | 2026-08-21 | Closes rc05 lifecycle review findings: aligns the base Permanent Monitor contract and TV-LIFE-01 with stable semantics plus bounded RAM/persistence/export impact; clarifies that future Development Probe retention does not satisfy closure; narrows the host lifecycle gate to documentation/checklist presence evidence. |
+| v1.0.0rc07 | 2026-08-21 | Closes rc06 evidence/documentation findings: repairs the replayable rc05→rc06 unified diff, restores RC-history ordering, and clarifies content-manifest provenance without changing recorder runtime architecture or schema. |
 
 ### Roadmap
 
@@ -59,10 +60,11 @@ v1.0.0rc03  Reference implementation hardening & contract closure
 v1.0.0rc04  Target-validation candidate + observer-effect evidence contract
 v1.0.0rc05  Probe lifecycle + feature-evidence closure contract
 v1.0.0rc06  Lifecycle contract review closure
+v1.0.0rc07  Evidence/documentation closure
 v1.0.0      Stabilized baseline after target evidence closure
 ```
 
-**Current milestone:** `v1.0.0rc06` is the immutable source baseline to be used for formal target validation. It carries the rc04 hardened runtime architecture plus the rc05 diagnostics lifecycle/feature-closure contract and the rc06 review-closure clarifications. Host/source pre-gates pass; target retention, timing, NVM, export, Development-trace, probe-cost, and observer-effect evidence remain `PENDING TARGET EVIDENCE` until measured on a concrete integration.
+**Current milestone:** `v1.0.0rc07` is the immutable source baseline to be used for formal target validation. It carries the rc04 hardened runtime architecture, the rc05 diagnostics lifecycle/feature-closure contract, the rc06 lifecycle-review closure, and the rc07 evidence/documentation cleanup. Host/source pre-gates pass; target retention, timing, NVM, export, Development-trace, probe-cost, and observer-effect evidence remain `PENDING TARGET EVIDENCE` until measured on a concrete integration.
 
 ---
 
@@ -2786,7 +2788,7 @@ However, during RC convergence, maintaining **one unified document** is preferre
 
 # Part J — RC Exit Criteria
 
-Before executing formal target validation against `v1.0.0rc06`:
+Before executing formal target validation against `v1.0.0rc07`:
 
 ```text
 - Release reference build compiles and runs with warnings treated as errors
@@ -2821,11 +2823,11 @@ Before executing formal target validation against `v1.0.0rc06`:
 - a Development-only compile switch is not accepted as evidence that a stale Development Probe was cleaned up
 ```
 
-The host reference build validates structural, defensive-correctness, persistence-model, service-sequencing, and rc03-Minor closure contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect are deliberately not claimed by the source package; they must be recorded using the rc06 target-validation evidence contract.
+The host reference build validates structural, defensive-correctness, persistence-model, service-sequencing, and rc03-Minor closure contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect are deliberately not claimed by the source package; they must be recorded using the rc07 target-validation evidence contract.
 
 # Part K — Document Status
 
-**Current:** `v1.0.0rc06`
+**Current:** `v1.0.0rc07`
 
 This is the **Target Validation Candidate Release Candidate**.
 
@@ -2836,7 +2838,8 @@ Future revisions:
 ```text
 v1.0.0rc04  Hardened target-validation candidate
 v1.0.0rc05  Probe lifecycle contract
-v1.0.0rc06  Lifecycle contract closure + target evidence execution
+v1.0.0rc06  Lifecycle contract review closure
+v1.0.0rc07  Evidence/documentation closure + target evidence execution
 future RC    Only if target evidence or review requires source correction
 v1.0.0      Stable baseline after target evidence closure
 ```
@@ -3374,11 +3377,12 @@ The emphasis remains:
 | v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline, rc03 Minor closure, and target evidence contract |
 | v1.0.0rc05 | 2026-08-21 | Permanent Monitor / Development Probe lifecycle and Remove-or-Promote feature-closure contract |
 | v1.0.0rc06 | 2026-08-21 | Lifecycle contract review closure: strengthened Permanent Monitor criteria, closed future-retention ambiguity, clarified host lifecycle evidence scope |
+| v1.0.0rc07 | 2026-08-21 | Evidence/documentation closure: replayable review diff, ordered RC history, authoritative content-manifest provenance wording |
 
 Planned direction:
 
 ```text
-rc06 target evidence → execute against immutable rc06 source identity
+rc07 target evidence → execute against immutable rc07 source identity
 future RC            → only if target evidence or review requires source correction
 v1.0.0               → stabilized framework baseline after target evidence closure
 ```
@@ -3387,7 +3391,7 @@ v1.0.0               → stabilized framework baseline after target evidence clo
 
 ## P1. Implementation Objective
 
-`v1.0.0rc06` keeps the hardened public reference implementation independent of a specific MCU, RTOS, storage technology, peripheral, company, or product. Relative to rc05, the runtime architecture remains unchanged; this RC closes lifecycle-contract review findings, refreshes build identity, and tightens target integration/evidence wording. Platform-specific mechanisms and measured acceptance limits remain owned by the concrete target integration.
+`v1.0.0rc07` keeps the hardened public reference implementation independent of a specific MCU, RTOS, storage technology, peripheral, company, or product. Relative to rc06, the recorder runtime architecture remains unchanged; this RC closes evidence/documentation findings, refreshes build identity, repairs review-diff replayability, and clarifies provenance wording. Platform-specific mechanisms and measured acceptance limits remain owned by the concrete target integration.
 
 The implementation model is:
 
@@ -4967,11 +4971,11 @@ void PlatformFatalHandler(const PlatformFaultFrame *platform_fault)
 [x] README and included MIT LICENSE are consistent
 ```
 
-Target timing, probe-cost, and physical retention guarantees remain intentionally open until concrete rc06 target evidence is supplied.
+Target timing, probe-cost, and physical retention guarantees remain intentionally open until concrete rc07 target evidence is supplied.
 
 # Part AI — Current Non-Goals
 
-`v1.0.0rc06` source package does not claim:
+`v1.0.0rc07` source package does not claim:
 
 ```text
 target-verified linker memory placement or startup retention behavior
@@ -5036,7 +5040,7 @@ The implementation continues to prioritize:
 
 > Recorder, persistence, SD, and export failures must not become product failures or timing dependencies.
 
-The next formal activity is execution of the rc06 target-validation plan against a concrete embedded integration. The immutable rc06 source identity must be recorded in the target result artifact.
+The next formal activity is execution of the rc07 target-validation plan against a concrete embedded integration. The immutable rc07 source identity must be recorded in the target result artifact.
 
 # Part AK — Storage Operating Modes & Evidence Export Contract
 
@@ -5867,15 +5871,33 @@ The host build gate verifies that the lifecycle documentation and target-integra
 
 ---
 
+# Part AQ — v1.0.0rc07 Evidence and Documentation Closure
+
+rc07 closes the independent rc06 evidence/documentation findings without changing recorder runtime architecture, public recorder APIs, runtime record schema, retained-store layout, persistence/export semantics, or hot-path behavior.
+
+## AQ1. Replayable Historical Scope Diff
+
+`validation/rc05_to_rc06_scope.diff` is regenerated as a standard unified diff and is verified with a standard `patch --dry-run` workflow against the authoritative rc05 content baseline. The semantic rc05→rc06 delta is unchanged; this correction removes evidence-packaging friction only.
+
+## AQ2. RC History Ordering
+
+Public RC history is maintained in chronological RC order so independent reviewers can follow the baseline progression without ambiguity.
+
+## AQ3. Content Provenance Authority
+
+The prior-RC source manifest is the authoritative content-level provenance record. Archive SHA-256 values are supplemental packaging evidence and may differ after byte-level repackaging even when extracted source content is identical.
+
+---
+
 # Appendix A — Target Validation and Stabilization Path (Non-Normative)
 
-## rc06 Target Evidence Execution
+## rc07 Target Evidence Execution
 
-Run the immutable rc06 source baseline on the concrete target using `target-validation/PLAN.md` and record results in a separate target evidence artifact.
+Run the immutable rc07 source baseline on the concrete target using `target-validation/PLAN.md` and record results in a separate target evidence artifact.
 
 If the target evidence exposes a source/specification defect, create the next RC and repeat the affected validation.
 
-If the target evidence closes without source changes, rc06 may become the implementation source basis for the `v1.0.0` stabilization decision.
+If the target evidence closes without source changes, rc07 may become the implementation source basis for the `v1.0.0` stabilization decision.
 
 The framework does not equate host build success with target validation.
 

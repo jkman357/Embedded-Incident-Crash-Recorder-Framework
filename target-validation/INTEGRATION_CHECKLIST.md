@@ -1,10 +1,10 @@
-# v1.0.0rc06 Target Integration Checklist
+# v1.0.0rc07 Target Integration Checklist
 
 Complete before formal target measurements.
 
 ## Source / Build Identity
 
-- [ ] Exact rc06 source identity recorded.
+- [ ] Exact rc07 source identity recorded.
 - [ ] Application firmware build identity recorded.
 - [ ] Compiler/version/optimization/LTO recorded.
 - [ ] Development and Release profile configuration recorded.

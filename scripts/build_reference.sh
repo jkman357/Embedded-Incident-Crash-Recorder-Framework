@@ -40,7 +40,7 @@ run() {
 }
 
 {
-  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc06"
+  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc07"
   echo "Reference build compiler: $($CC --version | head -1)"
   echo
 } | tee -a "$VALIDATION/build.log"
@@ -177,7 +177,7 @@ fi
 } | tee -a "$VALIDATION/build.log"
 
 cat > "$VALIDATION/host_pre_target_gate.txt" <<'EOF'
-Embedded Incident & Crash Recorder Framework v1.0.0rc06
+Embedded Incident & Crash Recorder Framework v1.0.0rc07
 Host Pre-Target Gate
 
 Release build/run: PASS
@@ -189,7 +189,7 @@ Hardening fixture: PASS
 ASan/UBSan hardening fixture: PASS
 Retained size/MAP gate: PASS
 rc03 Minor source closure: PASS
-rc06 lifecycle documentation/checklist presence: PASS
+rc07 lifecycle documentation/checklist presence: PASS
 Target validation evidence: PENDING
 
 This file is host/source evidence only. It does not claim real-target retention, timing, NVM, export, SD/filesystem, or observer-effect validation.

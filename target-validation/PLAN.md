@@ -1,4 +1,4 @@
-# v1.0.0rc06 Target Validation Plan
+# v1.0.0rc07 Target Validation Plan
 
 ## 1. Objective
 
