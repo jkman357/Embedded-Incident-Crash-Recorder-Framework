@@ -1,10 +1,10 @@
-# v1.0.0rc05 Target Integration Checklist
+# v1.0.0rc06 Target Integration Checklist
 
 Complete before formal target measurements.
 
 ## Source / Build Identity
 
-- [ ] Exact rc05 source identity recorded.
+- [ ] Exact rc06 source identity recorded.
 - [ ] Application firmware build identity recorded.
 - [ ] Compiler/version/optimization/LTO recorded.
 - [ ] Development and Release profile configuration recorded.
@@ -48,9 +48,12 @@ Complete before formal target measurements.
 - [ ] Each probe is classified as Permanent Monitor or Development Probe.
 - [ ] Each active Development Probe has a stated engineering question and removal criterion.
 - [ ] Completed feature/defect work records REMOVE or PROMOTE disposition for each Development Probe introduced by that work.
-- [ ] Every promoted Permanent Monitor has continuing diagnostic value documented.
-- [ ] Permanent Monitor call-path cost, event rate/data volume, and failure isolation are bounded for the target.
+- [ ] Every Permanent Monitor has continuing diagnostic value documented.
+- [ ] Permanent Monitor event/object semantics and interpretation are stable where persisted evidence depends on them.
+- [ ] Permanent Monitor call-path cost, event rate/data volume, RAM/persistence/export contribution, and failure isolation are bounded for the target.
+- [ ] Permanent Monitor observer effect/runtime cost is accepted for the target.
 - [ ] Release candidate contains no stale Development Probes merely hidden behind a Development-only build switch.
+- [ ] Any Development Probe transferred to future work is owned by a separately tracked active work item with a bounded engineering question and removal criterion; such transfer is not counted as closure of the originating work.
 - [ ] Post-cleanup source has been rebuilt and receives the required regression/timing confirmation.
 
 ## Development Trace

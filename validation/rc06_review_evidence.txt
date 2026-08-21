@@ -1,0 +1,22 @@
+EICRF v1.0.0rc06 Review Evidence
+
+Derivation baseline archive:
+  EICRF_v1.0.0rc05_Source.zip
+  SHA-256: 51c690f83da664d694280c2fff6122b0c6850223e6c8c28806e649e4d77c0182
+
+Content-independent provenance:
+  validation/rc05_source_manifest.sha256
+    SHA-256 manifest of the exact rc05 source tree used to derive rc06.
+
+Reproducible intended-scope delta:
+  validation/rc05_to_rc06_scope.diff
+    Unified diff for the hand-maintained specification/configuration files intentionally changed in rc06.
+    Generated validation outputs are excluded from this scope diff because rebuilding can change tool-generated paths/addresses without representing hand-edited source changes.
+
+Runtime neutrality check:
+  src/: no file changes relative to the rc05 derivation tree.
+  reference/: no file changes relative to the rc05 derivation tree.
+  linker/: no file changes relative to the rc05 derivation tree.
+  include/: only include/ir_config.h changed, advancing IR_BUILD_ID from 0x01000005 to 0x01000006.
+
+Target validation remains PENDING TARGET EVIDENCE.

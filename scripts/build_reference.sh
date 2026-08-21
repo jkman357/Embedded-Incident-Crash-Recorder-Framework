@@ -40,7 +40,7 @@ run() {
 }
 
 {
-  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc05"
+  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc06"
   echo "Reference build compiler: $($CC --version | head -1)"
   echo
 } | tee -a "$VALIDATION/build.log"
@@ -173,11 +173,11 @@ fi
   echo "PASS: release/development/off builds, C99 compatibility, wide retry configuration, runtime checks, retained size guard, and MAP section check"
   echo "PASS: Target results template remains PENDING TARGET EVIDENCE in source package"
   echo "PASS: Unsupported reference atomic/publication toolchains fail closed"
-  echo "PASS: Probe lifecycle classification and Development Probe closure gate are present"
+  echo "PASS: Probe lifecycle documentation and target-integration closure checklist are present"
 } | tee -a "$VALIDATION/build.log"
 
 cat > "$VALIDATION/host_pre_target_gate.txt" <<'EOF'
-Embedded Incident & Crash Recorder Framework v1.0.0rc05
+Embedded Incident & Crash Recorder Framework v1.0.0rc06
 Host Pre-Target Gate
 
 Release build/run: PASS
@@ -189,7 +189,7 @@ Hardening fixture: PASS
 ASan/UBSan hardening fixture: PASS
 Retained size/MAP gate: PASS
 rc03 Minor source closure: PASS
-rc05 probe lifecycle/closure contract: PASS
+rc06 lifecycle documentation/checklist presence: PASS
 Target validation evidence: PENDING
 
 This file is host/source evidence only. It does not claim real-target retention, timing, NVM, export, SD/filesystem, or observer-effect validation.

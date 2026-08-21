@@ -1,4 +1,4 @@
-# EICRF v1.0.0rc05 Target Validation Results
+# EICRF v1.0.0rc06 Target Validation Results
 
 **Status:** PENDING TARGET EVIDENCE
 

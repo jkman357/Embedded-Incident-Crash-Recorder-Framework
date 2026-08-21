@@ -1,4 +1,4 @@
-# v1.0.0rc05 Target Validation Plan
+# v1.0.0rc06 Target Validation Plan
 
 ## 1. Objective
 
@@ -50,8 +50,9 @@ Verify:
 - every project-added probe is classified as Permanent Monitor or Development Probe;
 - every active Development Probe has a documented engineering question and removal criterion;
 - completed feature/defect work has an explicit REMOVE or PROMOTE disposition for each Development Probe introduced by that work;
-- promoted Permanent Monitors have continuing diagnostic value and are included in runtime-cost/observer-effect measurement;
+- every Permanent Monitor has continuing diagnostic value, stable event/object semantics and interpretation where persisted evidence depends on them, bounded execution/event rate, bounded RAM/persistence/export contribution, failure isolation, and target runtime-cost/observer-effect acceptance;
 - the measured Release candidate contains no stale Development Probes merely hidden by a Development-only compile switch;
+- any Development Probe intentionally transferred to future work is owned by a separately tracked active work item with a bounded engineering question and removal criterion, and is not counted as closure of the originating work;
 - post-cleanup source was rebuilt and the required regression/timing confirmation was repeated where cleanup could materially alter timing or behavior.
 
 Retain the probe inventory and disposition record as target/project evidence.

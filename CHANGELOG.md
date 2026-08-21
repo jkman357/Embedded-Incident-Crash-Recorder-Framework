@@ -2,6 +2,30 @@
 
 All notable public release-candidate changes for the Embedded Incident & Crash Recorder Framework are recorded here.
 
+## v1.0.0rc06 — 2026-08-21
+
+### Fixed
+
+- Closed rc05 review F-01 by aligning the base Permanent Monitor contract with promotion requirements for stable event/object semantics and bounded RAM/persistence/export contribution.
+- Closed rc05 review F-02 by clarifying that intentional Development Probe retention for future work does not satisfy feature/change closure; ownership must remain open or transfer to a separately tracked active work item, and final closure still requires REMOVE or PROMOTE.
+- Closed rc05 review F-03 wording by narrowing the host lifecycle gate to documentation/checklist presence evidence rather than implying project-level lifecycle compliance.
+
+### Review evidence
+
+- Added rc05→rc06 review-evidence metadata and a reproducible scope diff to support independent RC delta review.
+- The prior package/container hash and source-tree diff evidence are recorded under `validation/`.
+
+### Changed
+
+- Advanced default framework build identity to `0x01000006`.
+- Formal target-validation package now identifies the immutable rc06 source baseline.
+- No recorder-core API, runtime record schema, retained-store layout, persistence transaction model, or hot-path I/O boundary was intentionally changed.
+
+### Validation boundary
+
+- Host/source pre-target gates must still pass.
+- Real-target probe cost, observer effect, retention, NVM, export, and SD/filesystem evidence remain pending until measured on a concrete integration.
+
 ## v1.0.0rc05 — 2026-08-21
 
 ### Added
