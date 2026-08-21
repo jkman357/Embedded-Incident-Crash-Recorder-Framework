@@ -2,6 +2,34 @@
 
 All notable public release-candidate changes for the Embedded Incident & Crash Recorder Framework are recorded here.
 
+## v1.0.0rc05 — 2026-08-21
+
+### Added
+
+- Normative `Permanent Monitor` and `Development Probe` lifecycle classifications.
+- Explicit Development Probe feature/defect closure gate: every temporary probe must be `REMOVE` or `PROMOTE TO PERMANENT MONITOR`.
+- Promotion criteria covering continuing diagnostic value, stable interpretation, bounded execution/event rate, bounded storage contribution, failure isolation, and target observer-effect/runtime-cost acceptance.
+- Project-level guidance that `IR_MONITOR_*` / `IR_DEV_PROBE_*` wrappers may be used for readability without changing recorder-core semantics or the persisted record schema.
+- Target integration checklist items for probe inventory, temporary-probe exit criteria, Remove-or-Promote disposition, and Release configuration cleanup.
+
+### Clarified
+
+- Development/Release build profile is a storage/export policy and is not the same thing as Development Probe lifecycle.
+- Hiding temporary instrumentation behind a Development-only compile switch does not satisfy feature-closure cleanup.
+- Permanent Monitor does not imply continuous SD/filesystem logging; Release storage/export rules remain unchanged.
+- Evidence collected with temporary probes belongs to the tested build; after probe cleanup, the cleaned build requires appropriate rebuild/regression confirmation.
+
+### Changed
+
+- Advanced default framework build identity to `0x01000005`.
+- Formal target-validation package now identifies the immutable rc05 source baseline.
+- No recorder-core API, runtime record schema, retained-store layout, persistence transaction model, or hot-path I/O boundary was intentionally changed.
+
+### Validation boundary
+
+- Host/source pre-target gates must still pass.
+- Real-target probe cost, observer effect, retention, NVM, export, and SD/filesystem evidence remain pending until measured on a concrete integration.
+
 ## v1.0.0rc04 — 2026-08-21
 
 ### Fixed

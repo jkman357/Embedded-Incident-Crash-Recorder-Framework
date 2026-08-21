@@ -176,8 +176,8 @@ Disassembly of section .text:
     12ae:	f3 48 ab             	rep stos %rax,%es:(%rdi)
     12b1:	48 8b 05 58 3d 00 00 	mov    0x3d58(%rip),%rax        # 5010 <_IO_stdin_used+0x10>
     12b8:	bf 03 01 00 00       	mov    $0x103,%edi
-    12bd:	c7 84 24 10 01 00 00 	movl   $0x1000004,0x110(%rsp)
-    12c4:	04 00 00 01 
+    12bd:	c7 84 24 10 01 00 00 	movl   $0x1000005,0x110(%rsp)
+    12c4:	05 00 00 01 
     12c8:	66 89 bc 24 14 01 00 	mov    %di,0x114(%rsp)
     12cf:	00 
     12d0:	48 89 d7             	mov    %rdx,%rdi
@@ -212,8 +212,8 @@ Disassembly of section .text:
     1347:	c1 e9 03             	shr    $0x3,%ecx
     134a:	f3 48 ab             	rep stos %rax,%es:(%rdi)
     134d:	48 8b 05 c4 3c 00 00 	mov    0x3cc4(%rip),%rax        # 5018 <_IO_stdin_used+0x18>
-    1354:	c7 84 24 10 01 00 00 	movl   $0x1000004,0x110(%rsp)
-    135b:	04 00 00 01 
+    1354:	c7 84 24 10 01 00 00 	movl   $0x1000005,0x110(%rsp)
+    135b:	05 00 00 01 
     135f:	66 89 b4 24 14 01 00 	mov    %si,0x114(%rsp)
     1366:	00 
     1367:	48 89 84 24 18 01 00 	mov    %rax,0x118(%rsp)
@@ -271,8 +271,8 @@ Disassembly of section .text:
     143d:	f3 48 ab             	rep stos %rax,%es:(%rdi)
     1440:	48 8b 05 d9 3b 00 00 	mov    0x3bd9(%rip),%rax        # 5020 <_IO_stdin_used+0x20>
     1447:	b9 03 01 00 00       	mov    $0x103,%ecx
-    144c:	c7 84 24 10 01 00 00 	movl   $0x1000004,0x110(%rsp)
-    1453:	04 00 00 01 
+    144c:	c7 84 24 10 01 00 00 	movl   $0x1000005,0x110(%rsp)
+    1453:	05 00 00 01 
     1457:	66 89 8c 24 14 01 00 	mov    %cx,0x114(%rsp)
     145e:	00 
     145f:	48 89 84 24 18 01 00 	mov    %rax,0x118(%rsp)
@@ -309,8 +309,8 @@ Disassembly of section .text:
     14e6:	c1 e9 03             	shr    $0x3,%ecx
     14e9:	f3 48 ab             	rep stos %rax,%es:(%rdi)
     14ec:	48 8b 05 35 3b 00 00 	mov    0x3b35(%rip),%rax        # 5028 <_IO_stdin_used+0x28>
-    14f3:	c7 84 24 10 01 00 00 	movl   $0x1000004,0x110(%rsp)
-    14fa:	04 00 00 01 
+    14f3:	c7 84 24 10 01 00 00 	movl   $0x1000005,0x110(%rsp)
+    14fa:	05 00 00 01 
     14fe:	66 89 94 24 14 01 00 	mov    %dx,0x114(%rsp)
     1505:	00 
     1506:	48 89 84 24 18 01 00 	mov    %rax,0x118(%rsp)
@@ -349,8 +349,8 @@ Disassembly of section .text:
     1594:	c1 e9 03             	shr    $0x3,%ecx
     1597:	f3 48 ab             	rep stos %rax,%es:(%rdi)
     159a:	b8 03 01 00 00       	mov    $0x103,%eax
-    159f:	c7 84 24 10 01 00 00 	movl   $0x1000004,0x110(%rsp)
-    15a6:	04 00 00 01 
+    159f:	c7 84 24 10 01 00 00 	movl   $0x1000005,0x110(%rsp)
+    15a6:	05 00 00 01 
     15aa:	66 89 84 24 14 01 00 	mov    %ax,0x114(%rsp)
     15b1:	00 
     15b2:	48 8b 05 77 3a 00 00 	mov    0x3a77(%rip),%rax        # 5030 <_IO_stdin_used+0x30>
@@ -1476,7 +1476,7 @@ Disassembly of section .text:
     278a:	00 00 00 
     278d:	89 2d d1 58 00 00    	mov    %ebp,0x58d1(%rip)        # 8064 <g_ir_retained+0x2c>
     2793:	c6 05 0a 87 00 00 01 	movb   $0x1,0x870a(%rip)        # aea4 <g_ir_runtime+0x4>
-    279a:	c7 05 9c 58 00 00 04 	movl   $0x1000004,0x589c(%rip)        # 8040 <g_ir_retained+0x8>
+    279a:	c7 05 9c 58 00 00 05 	movl   $0x1000005,0x589c(%rip)        # 8040 <g_ir_retained+0x8>
     27a1:	00 00 01 
     27a4:	66 89 05 f7 86 00 00 	mov    %ax,0x86f7(%rip)        # aea2 <g_ir_runtime+0x2>
     27ab:	c6 05 f3 86 00 00 00 	movb   $0x0,0x86f3(%rip)        # aea5 <g_ir_runtime+0x5>
@@ -2180,7 +2180,7 @@ Disassembly of section .text:
     31a6:	48 85 c0             	test   %rax,%rax
     31a9:	0f 84 01 06 00 00    	je     37b0 <IR_ServiceProcess+0x6c0>
     31af:	be 03 01 00 00       	mov    $0x103,%esi
-    31b4:	bf 04 00 00 01       	mov    $0x1000004,%edi
+    31b4:	bf 05 00 00 01       	mov    $0x1000005,%edi
     31b9:	ff d0                	call   *%rax
     31bb:	85 c0                	test   %eax,%eax
     31bd:	0f 85 ed 05 00 00    	jne    37b0 <IR_ServiceProcess+0x6c0>
@@ -2251,7 +2251,7 @@ Disassembly of section .text:
     32e4:	8b 35 da 7b 00 00    	mov    0x7bda(%rip),%esi        # aec4 <g_ir_runtime+0x24>
     32ea:	8b 3d d0 7b 00 00    	mov    0x7bd0(%rip),%edi        # aec0 <g_ir_runtime+0x20>
     32f0:	b9 03 01 00 00       	mov    $0x103,%ecx
-    32f5:	ba 04 00 00 01       	mov    $0x1000004,%edx
+    32f5:	ba 05 00 00 01       	mov    $0x1000005,%edx
     32fa:	ff 55 08             	call   *0x8(%rbp)
     32fd:	85 c0                	test   %eax,%eax
     32ff:	0f 85 1b 02 00 00    	jne    3520 <IR_ServiceProcess+0x430>

@@ -1,12 +1,12 @@
 # Embedded Incident & Crash Recorder Framework
 ## Low-Coupling Evidence, First-Abnormal-State, Survivability & Recovery Architecture
 
-**Version:** v1.0.0rc04
-**Status:** Target Validation Candidate — Host Pre-Gate Complete; Target Evidence Pending
+**Version:** v1.0.0rc05
+**Status:** Target Validation Candidate — Probe Lifecycle Contract Added; Host Pre-Gate Complete; Target Evidence Pending
 **Date:** 2026-08-21  
 **Scope:** Generic embedded systems; independent of specific MCU, RTOS, storage medium, communication bus, motor controller, sensor, company, or product.
 
-**Release type:** Target-validation candidate RC. This RC preserves the public architecture baseline, closes the four Minor findings from the rc03 independent review, adds an explicit target-validation evidence package, and keeps all real-target results marked pending until measured on a concrete integration.
+**Release type:** Target-validation candidate RC. This RC preserves the hardened recorder runtime architecture, adds a normative Permanent Monitor / Development Probe lifecycle and feature-closure contract, refreshes target-validation integration gates for that contract, and keeps all real-target results marked pending until measured on a concrete integration.
 
 ---
 
@@ -47,6 +47,7 @@ This RC has **one canonical definition per topic**.
 | v1.0.0rc02 | 2026-08-21 | Minimal reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, persistence/export boundaries, Development trace queue, Release on-demand export, and host build/MAP/size validation. |
 | v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and contract closure: Development trace metadata self-protection, bounded two-slot persistent journal, interrupted-write recovery, persistence-pause loss accounting, dedicated fatal publication state, explicit publication barrier contract, full Recorder-OFF build gate, and sanitizer-backed hardening checks. |
 | v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline: closes rc03 Minor findings, strengthens host restart/identity behavior, separates persistence/export retry configuration, suppresses unpublished protected-snapshot copies, and adds explicit target-validation plan/checklist/results templates. Real target evidence remains pending. |
+| v1.0.0rc05 | 2026-08-21 | Adds the normative diagnostics lifecycle contract: Permanent Monitors are intentional release diagnostics; Development Probes are temporary feature/defect instrumentation and must be removed at closure unless explicitly promoted after diagnostic-value and runtime-cost review. Target integration adds a probe inventory and Remove-or-Promote gate. |
 
 ### Roadmap
 
@@ -55,10 +56,11 @@ v1.0.0rc01  Initial public specification baseline
 v1.0.0rc02  Minimal reference implementation
 v1.0.0rc03  Reference implementation hardening & contract closure
 v1.0.0rc04  Target-validation candidate + observer-effect evidence contract
+v1.0.0rc05  Probe lifecycle + feature-evidence closure contract
 v1.0.0      Stabilized baseline after target evidence closure
 ```
 
-**Current milestone:** `v1.0.0rc04` is the immutable source baseline to be used for formal target validation. Host/source pre-gates pass; target retention, timing, NVM, export, Development-trace, and observer-effect evidence remain `PENDING TARGET EVIDENCE` until measured on a concrete integration.
+**Current milestone:** `v1.0.0rc05` is the immutable source baseline to be used for formal target validation. It carries the rc04 hardened runtime architecture plus the normative diagnostics lifecycle and feature-closure contract. Host/source pre-gates pass; target retention, timing, NVM, export, Development-trace, probe-cost, and observer-effect evidence remain `PENDING TARGET EVIDENCE` until measured on a concrete integration.
 
 ---
 
@@ -2774,12 +2776,15 @@ However, during RC convergence, maintaining **one unified document** is preferre
 15. **Increase evidence quality before increasing RAM size.**
 16. **Development/Release storage profiles are compile-time policies, not runtime UI modes.**
 17. **Continuous Development Trace is separate from persistent Incident Evidence.**
+18. **Permanent Monitors and Development Probes are different lifecycle classes even when they use the same recorder API.**
+19. **A Development Probe is temporary instrumentation and shall be removed at feature/defect closure unless it is explicitly promoted to a Permanent Monitor.**
+20. **Build-profile exclusion is not a substitute for Development Probe cleanup; closure requires an explicit Remove-or-Promote disposition.**
 
 ---
 
 # Part J — RC Exit Criteria
 
-Before executing formal target validation against `v1.0.0rc04`:
+Before executing formal target validation against `v1.0.0rc05`:
 
 ```text
 - Release reference build compiles and runs with warnings treated as errors
@@ -2807,13 +2812,18 @@ Before executing formal target validation against `v1.0.0rc04`:
 - persistence and export retry countdowns preserve configured values beyond 8-bit range
 - unpublished First-Abnormal/Fatal payload bytes are not copied into a persistence source image
 - target-validation plan, integration checklist, and results template are present and contain no pre-filled target PASS claims
+- project probe inventory distinguishes Permanent Monitors from Development Probes
+- each Development Probe has an explicit removal criterion while active
+- feature/defect closure records an explicit REMOVE or PROMOTE disposition for every Development Probe introduced by the work
+- promotion to Permanent Monitor records diagnostic value, bounded rate/data volume, and observer-effect/runtime-cost acceptance
+- a Development-only compile switch is not accepted as evidence that a stale Development Probe was cleaned up
 ```
 
-The host reference build validates structural, defensive-correctness, persistence-model, service-sequencing, and rc03-Minor closure contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect are deliberately not claimed by the source package; they must be recorded using the rc04 target-validation evidence contract.
+The host reference build validates structural, defensive-correctness, persistence-model, service-sequencing, and rc03-Minor closure contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect are deliberately not claimed by the source package; they must be recorded using the rc05 target-validation evidence contract.
 
 # Part K — Document Status
 
-**Current:** `v1.0.0rc04`
+**Current:** `v1.0.0rc05`
 
 This is the **Target Validation Candidate Release Candidate**.
 
@@ -2822,8 +2832,9 @@ The public architecture remains generic. The source baseline includes the rc03 i
 Future revisions:
 
 ```text
-v1.0.0rc04  Target-validation candidate + target evidence execution
-future RC    Only if target evidence requires source correction
+v1.0.0rc04  Hardened target-validation candidate
+v1.0.0rc05  Probe lifecycle contract + target evidence execution
+future RC    Only if target evidence or review requires source correction
 v1.0.0      Stable baseline after target evidence closure
 ```
 
@@ -3358,12 +3369,13 @@ The emphasis remains:
 | v1.0.0rc02 | 2026-08-21 | Minimal reference implementation plus compile/link/MAP/size validation |
 | v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and independent-review contract closure |
 | v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline, rc03 Minor closure, and target evidence contract |
+| v1.0.0rc05 | 2026-08-21 | Permanent Monitor / Development Probe lifecycle and Remove-or-Promote feature-closure contract |
 
 Planned direction:
 
 ```text
-rc04 target evidence → execute against immutable rc04 source identity
-future RC            → only if target evidence requires source correction
+rc05 target evidence → execute against immutable rc05 source identity
+future RC            → only if target evidence or review requires source correction
 v1.0.0               → stabilized framework baseline after target evidence closure
 ```
 
@@ -3371,7 +3383,7 @@ v1.0.0               → stabilized framework baseline after target evidence clo
 
 ## P1. Implementation Objective
 
-`v1.0.0rc04` keeps the hardened public reference implementation independent of a specific MCU, RTOS, storage technology, peripheral, company, or product. It adds only source-level closure and a target-validation evidence contract; platform-specific mechanisms and measured acceptance limits remain owned by the concrete target integration.
+`v1.0.0rc05` keeps the hardened public reference implementation independent of a specific MCU, RTOS, storage technology, peripheral, company, or product. Relative to rc04, the runtime architecture is unchanged; this RC adds the normative diagnostics lifecycle and feature-evidence closure contract, refreshes build identity, and extends target integration gates. Platform-specific mechanisms and measured acceptance limits remain owned by the concrete target integration.
 
 The implementation model is:
 
@@ -3657,6 +3669,116 @@ project IDs remain project-owned
 ```
 
 Avoid embedding persistence/export logic at probe sites.
+
+---
+
+## R4. Probe Lifecycle Classification
+
+Every project-added diagnostic observation site shall have exactly one lifecycle classification:
+
+```text
+Permanent Monitor
+Development Probe
+```
+
+### Permanent Monitor
+
+A **Permanent Monitor** is an intentional product diagnostic capability retained beyond feature closure and eligible for production/Release integration.
+
+A Permanent Monitor shall have a documented diagnostic purpose and shall satisfy the normal recorder constraints, including bounded execution, bounded event rate/data volume, failure isolation, and accepted observer effect for the concrete target.
+
+Examples include long-term evidence for:
+
+```text
+reset / crash state
+Task stall or missed service deadline
+communication timeout or repeated protocol failure
+motor/control fault transition
+mailbox / queue loss
+important alarm/state transition
+recorder health degradation
+```
+
+Permanent Monitor does **not** mean continuous physical logging. Release storage/export policy remains governed by Parts R, AC, AK, and the project integration profile.
+
+### Development Probe
+
+A **Development Probe** is temporary instrumentation added to answer a bounded engineering question during feature implementation, defect investigation, refactoring, timing study, or verification.
+
+Examples include:
+
+```text
+UI redraw begin/end timing
+intermediate state-machine steps
+temporary queue-depth sampling
+command parsing checkpoints
+short-lived execution-time markers
+feature-specific transition breadcrumbs
+```
+
+A Development Probe is not a production diagnostic merely because it is inexpensive or hidden behind a Development build switch.
+
+The lifecycle classification is project/engineering metadata. The current reference runtime record schema does not require a new wire-format field, and the same low-level recorder API may be used by either class. Projects may use wrapper names such as `IR_MONITOR_*` and `IR_DEV_PROBE_*` for readability, but such wrappers shall remain thin and shall not alter recorder-core semantics.
+
+---
+
+## R5. Development Probe Closure and Promotion Gate
+
+A Development Probe shall have a bounded reason for existence and an expected removal point.
+
+The normal feature/defect workflow is:
+
+```text
+Define change and expected behavior
+        ↓
+Add only the Development Probes needed to produce evidence
+        ↓
+Implement / run / collect evidence
+        ↓
+Verify expected behavior and regression constraints
+        ↓
+Disposition every Development Probe
+        ↓
+REMOVE                         PROMOTE
+(delete temporary probe)       (convert to Permanent Monitor)
+        ↓                            ↓
+Rebuild / regression check     document value + runtime cost
+        ↓                            ↓
+             Feature baseline closure
+```
+
+At closure, every Development Probe introduced or materially changed by the work shall have one explicit disposition:
+
+```text
+REMOVE
+PROMOTE TO PERMANENT MONITOR
+```
+
+There is no implicit third state of “leave it because it is already there.”
+
+Promotion requires, at minimum:
+
+1. a continuing diagnostic purpose beyond the current development activity;
+2. a stable event/object ID and interpretation where persisted evidence depends on it;
+3. bounded call-path execution and event frequency;
+4. bounded RAM/persistence/export contribution;
+5. failure isolation from product control;
+6. target observer-effect/runtime-cost acceptance before production use.
+
+A compile-time Development-only switch may be useful during implementation, but disabling a stale probe in Release is **not** equivalent to removing it at closure. If the probe is intentionally retained for future development, that retention shall be explicit in the project development plan rather than accidental source accumulation.
+
+After temporary probes are removed, the cleaned source shall be rebuilt and receive the level of regression/timing confirmation appropriate to the change. Evidence collected before cleanup remains valid evidence for the tested build, but it shall not be silently treated as evidence for a materially different cleaned build.
+
+The closure record should therefore preserve:
+
+```text
+feature / defect identifier
+probe inventory
+evidence collected
+REMOVE / PROMOTE disposition
+Permanent Monitor justification, if promoted
+post-cleanup build / regression evidence
+```
 
 ---
 
@@ -4832,17 +4954,20 @@ void PlatformFatalHandler(const PlatformFaultFrame *platform_fault)
 [x] persistence-pause Task/ISR losses are counted
 [x] full Recorder-OFF source set compiles/links/runs cleanly under warnings-as-errors
 [x] all public probe macros are non-evaluating when disabled
+[x] Permanent Monitor and Development Probe lifecycle classes are normatively distinguished
+[x] Development Probe feature closure requires explicit REMOVE or PROMOTE disposition
+[x] Development build/profile exclusion is not treated as a substitute for stale-probe cleanup
 [x] hardening fixture passes ASan/UBSan
 [x] export completion does not delete the persistent evidence payload
 [x] generic public examples contain no private project identifiers
 [x] README and included MIT LICENSE are consistent
 ```
 
-Target timing and physical retention guarantees remain intentionally open until concrete rc04 target evidence is supplied.
+Target timing, probe-cost, and physical retention guarantees remain intentionally open until concrete rc05 target evidence is supplied.
 
 # Part AI — Current Non-Goals
 
-`v1.0.0rc04` source package does not claim:
+`v1.0.0rc05` source package does not claim:
 
 ```text
 target-verified linker memory placement or startup retention behavior
@@ -4907,7 +5032,7 @@ The implementation continues to prioritize:
 
 > Recorder, persistence, SD, and export failures must not become product failures or timing dependencies.
 
-The next formal activity is execution of the rc04 target-validation plan against a concrete embedded integration. The immutable rc04 source identity must be recorded in the target result artifact.
+The next formal activity is execution of the rc05 target-validation plan against a concrete embedded integration. The immutable rc05 source identity must be recorded in the target result artifact.
 
 # Part AK — Storage Operating Modes & Evidence Export Contract
 
@@ -5674,15 +5799,61 @@ Missing target evidence is `PENDING`, never `PASS`.
 
 ---
 
+# Part AO — v1.0.0rc05 Diagnostics Lifecycle and Feature-Closure Contract
+
+## AO1. Scope
+
+rc05 adds an explicit lifecycle contract for project-side instrumentation without changing the rc04 recorder-core architecture, retained-record schema, persistence transaction model, or hot-path service boundary.
+
+The two lifecycle classes are:
+
+```text
+Permanent Monitor   → intentional long-term diagnostic capability
+Development Probe   → temporary engineering instrumentation
+```
+
+## AO2. Feature Closure Rule
+
+A feature, refactor, or defect-fix activity is not diagnostically closed until each Development Probe introduced by that work is explicitly removed or promoted.
+
+```text
+Development Probe
+      ↓
+Evidence collected
+      ↓
+REMOVE  or  PROMOTE
+```
+
+Promotion is an engineering decision, not an accident of source history. It requires continuing diagnostic value and accepted target runtime cost.
+
+## AO3. Build-Profile Boundary
+
+The Development/Release storage profile and the Development Probe lifecycle solve different problems.
+
+```text
+Build profile      → storage/export policy
+Probe lifecycle    → source-instrumentation ownership and closure
+```
+
+Therefore a Development-only compile guard does not by itself satisfy probe cleanup.
+
+## AO4. Target Integration Gate
+
+The rc05 target integration checklist adds a probe inventory and lifecycle gate. Formal target evidence shall identify the Permanent Monitors included in the measured Release configuration and shall not silently include stale Development Probes.
+
+The target-validation result remains `PENDING TARGET EVIDENCE` until measured on a concrete integration.
+
+---
+
 # Appendix A — Target Validation and Stabilization Path (Non-Normative)
 
-## rc04 Target Evidence Execution
+## rc05 Target Evidence Execution
 
-Run the immutable rc04 source baseline on the concrete target using `target-validation/PLAN.md` and record results in a separate target evidence artifact.
+Run the immutable rc05 source baseline on the concrete target using `target-validation/PLAN.md` and record results in a separate target evidence artifact.
 
 If the target evidence exposes a source/specification defect, create the next RC and repeat the affected validation.
 
-If the target evidence closes without source changes, rc04 may become the implementation source basis for the `v1.0.0` stabilization decision.
+If the target evidence closes without source changes, rc05 may become the implementation source basis for the `v1.0.0` stabilization decision.
 
 The framework does not equate host build success with target validation.
 

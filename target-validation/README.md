@@ -1,10 +1,10 @@
 # Target Validation Package
 
-This directory defines the evidence contract for `v1.0.0rc04` target validation.
+This directory defines the evidence contract for `v1.0.0rc05` target validation.
 
 The source package is a **Target Validation Candidate**. It does not claim that any MCU, RTOS, retained-memory region, NVM device, filesystem, SD card, or product firmware has already passed these checks.
 
-Use the exact rc04 source revision for target execution and record the source ZIP or commit identity in the result report.
+Use the exact rc05 source revision for target execution and record the source ZIP or commit identity in the result report.
 
 Files:
 

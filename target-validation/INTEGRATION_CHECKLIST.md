@@ -1,10 +1,10 @@
-# v1.0.0rc04 Target Integration Checklist
+# v1.0.0rc05 Target Integration Checklist
 
 Complete before formal target measurements.
 
 ## Source / Build Identity
 
-- [ ] Exact rc04 source identity recorded.
+- [ ] Exact rc05 source identity recorded.
 - [ ] Application firmware build identity recorded.
 - [ ] Compiler/version/optimization/LTO recorded.
 - [ ] Development and Release profile configuration recorded.
@@ -41,6 +41,17 @@ Complete before formal target measurements.
 - [ ] Missing/slow destination cannot block product control.
 - [ ] Abort/failure leaves source evidence intact.
 - [ ] Successful export and source reclamation are separate.
+
+## Probe Lifecycle / Feature Closure
+
+- [ ] Project-added probe inventory is available.
+- [ ] Each probe is classified as Permanent Monitor or Development Probe.
+- [ ] Each active Development Probe has a stated engineering question and removal criterion.
+- [ ] Completed feature/defect work records REMOVE or PROMOTE disposition for each Development Probe introduced by that work.
+- [ ] Every promoted Permanent Monitor has continuing diagnostic value documented.
+- [ ] Permanent Monitor call-path cost, event rate/data volume, and failure isolation are bounded for the target.
+- [ ] Release candidate contains no stale Development Probes merely hidden behind a Development-only build switch.
+- [ ] Post-cleanup source has been rebuilt and receives the required regression/timing confirmation.
 
 ## Development Trace
 

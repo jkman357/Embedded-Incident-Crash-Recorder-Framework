@@ -6,7 +6,7 @@ Removed property 0xc0000002 to merge /usr/lib/gcc/x86_64-linux-gnu/14/../../../x
 
 As-needed library included to satisfy reference by file (symbol)
 
-libc.so.6                     /tmp/ccqBtVxR.o (puts@@GLIBC_2.2.5)
+libc.so.6                     /tmp/ccWRuPyV.o (puts@@GLIBC_2.2.5)
 
 Discarded input sections
 
@@ -19,142 +19,142 @@ Discarded input sections
  .data          0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
  .note.gnu.property
                 0x0000000000000000       0x20 /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
- .text          0x0000000000000000        0x0 /tmp/ccNZLKeI.o
- .data          0x0000000000000000        0x0 /tmp/ccNZLKeI.o
- .bss           0x0000000000000000        0x0 /tmp/ccNZLKeI.o
+ .text          0x0000000000000000        0x0 /tmp/ccmaSfMC.o
+ .data          0x0000000000000000        0x0 /tmp/ccmaSfMC.o
+ .bss           0x0000000000000000        0x0 /tmp/ccmaSfMC.o
  .text.IR_EventTask
-                0x0000000000000000        0x1 /tmp/ccNZLKeI.o
+                0x0000000000000000        0x1 /tmp/ccmaSfMC.o
  .text.IR_EventIsr
-                0x0000000000000000        0x1 /tmp/ccNZLKeI.o
+                0x0000000000000000        0x1 /tmp/ccmaSfMC.o
  .text.IR_FirstAbnormalTask
-                0x0000000000000000        0x3 /tmp/ccNZLKeI.o
+                0x0000000000000000        0x3 /tmp/ccmaSfMC.o
  .text.IR_FirstAbnormalIsr
-                0x0000000000000000        0x3 /tmp/ccNZLKeI.o
+                0x0000000000000000        0x3 /tmp/ccmaSfMC.o
  .text.IR_FatalCapture
-                0x0000000000000000        0x1 /tmp/ccNZLKeI.o
- .text          0x0000000000000000        0x0 /tmp/ccAJnwET.o
- .data          0x0000000000000000        0x0 /tmp/ccAJnwET.o
- .bss           0x0000000000000000        0x0 /tmp/ccAJnwET.o
- .text          0x0000000000000000        0x0 /tmp/ccS59WTR.o
- .data          0x0000000000000000        0x0 /tmp/ccS59WTR.o
- .bss           0x0000000000000000        0x0 /tmp/ccS59WTR.o
+                0x0000000000000000        0x1 /tmp/ccmaSfMC.o
+ .text          0x0000000000000000        0x0 /tmp/ccSwt2Hb.o
+ .data          0x0000000000000000        0x0 /tmp/ccSwt2Hb.o
+ .bss           0x0000000000000000        0x0 /tmp/ccSwt2Hb.o
+ .text          0x0000000000000000        0x0 /tmp/ccy2BbKQ.o
+ .data          0x0000000000000000        0x0 /tmp/ccy2BbKQ.o
+ .bss           0x0000000000000000        0x0 /tmp/ccy2BbKQ.o
  .text.RefExportAvailable
-                0x0000000000000000        0x6 /tmp/ccS59WTR.o
+                0x0000000000000000        0x6 /tmp/ccy2BbKQ.o
  .text.RefExportEnd
-                0x0000000000000000       0x13 /tmp/ccS59WTR.o
+                0x0000000000000000       0x13 /tmp/ccy2BbKQ.o
  .text.RefExportAbort
-                0x0000000000000000       0x1f /tmp/ccS59WTR.o
+                0x0000000000000000       0x1f /tmp/ccy2BbKQ.o
  .text.RefGetTimestamp
-                0x0000000000000000       0x10 /tmp/ccS59WTR.o
+                0x0000000000000000       0x10 /tmp/ccy2BbKQ.o
  .text.RefGetResetCause
-                0x0000000000000000        0x6 /tmp/ccS59WTR.o
+                0x0000000000000000        0x6 /tmp/ccy2BbKQ.o
  .text.RefGetContextType
-                0x0000000000000000        0x3 /tmp/ccS59WTR.o
+                0x0000000000000000        0x3 /tmp/ccy2BbKQ.o
  .text.RefEnterCritical
-                0x0000000000000000        0x3 /tmp/ccS59WTR.o
+                0x0000000000000000        0x3 /tmp/ccy2BbKQ.o
  .text.RefExitCritical
-                0x0000000000000000        0x1 /tmp/ccS59WTR.o
+                0x0000000000000000        0x1 /tmp/ccy2BbKQ.o
  .text.RefTryClaimU32
-                0x0000000000000000       0x13 /tmp/ccS59WTR.o
+                0x0000000000000000       0x13 /tmp/ccy2BbKQ.o
  .text.RefExportWrite
-                0x0000000000000000       0x6e /tmp/ccS59WTR.o
+                0x0000000000000000       0x6e /tmp/ccy2BbKQ.o
  .text.RefPublishBarrier
-                0x0000000000000000        0x1 /tmp/ccS59WTR.o
+                0x0000000000000000        0x1 /tmp/ccy2BbKQ.o
  .text.RefCrc32.part.0
-                0x0000000000000000       0x44 /tmp/ccS59WTR.o
+                0x0000000000000000       0x44 /tmp/ccy2BbKQ.o
  .text.RefPutU32.constprop.0
-                0x0000000000000000       0x4f /tmp/ccS59WTR.o
+                0x0000000000000000       0x4f /tmp/ccy2BbKQ.o
  .text.RefPutU16.constprop.0
-                0x0000000000000000       0x34 /tmp/ccS59WTR.o
+                0x0000000000000000       0x34 /tmp/ccy2BbKQ.o
  .text.RefGetContextId
-                0x0000000000000000        0x6 /tmp/ccS59WTR.o
+                0x0000000000000000        0x6 /tmp/ccy2BbKQ.o
  .text.RefSlotValid
-                0x0000000000000000       0x91 /tmp/ccS59WTR.o
+                0x0000000000000000       0x91 /tmp/ccy2BbKQ.o
  .text.RefRecoverSlots
-                0x0000000000000000       0x96 /tmp/ccS59WTR.o
+                0x0000000000000000       0x96 /tmp/ccy2BbKQ.o
  .text.RefPersistentReadPayload
-                0x0000000000000000       0x9a /tmp/ccS59WTR.o
+                0x0000000000000000       0x9a /tmp/ccy2BbKQ.o
  .text.RefFindPendingOldest
-                0x0000000000000000       0x6d /tmp/ccS59WTR.o
+                0x0000000000000000       0x6d /tmp/ccy2BbKQ.o
  .text.RefPersistentReadMeta
-                0x0000000000000000       0x4e /tmp/ccS59WTR.o
+                0x0000000000000000       0x4e /tmp/ccy2BbKQ.o
  .text.RefPersistentHasPending
-                0x0000000000000000       0x14 /tmp/ccS59WTR.o
+                0x0000000000000000       0x14 /tmp/ccy2BbKQ.o
  .text.RefPersistentMarkExported
-                0x0000000000000000       0x68 /tmp/ccS59WTR.o
+                0x0000000000000000       0x68 /tmp/ccy2BbKQ.o
  .text.RefExportVerify
-                0x0000000000000000       0x72 /tmp/ccS59WTR.o
+                0x0000000000000000       0x72 /tmp/ccy2BbKQ.o
  .text.RefExportBegin
-                0x0000000000000000       0xa2 /tmp/ccS59WTR.o
+                0x0000000000000000       0xa2 /tmp/ccy2BbKQ.o
  .text.RefPutRuntimeRecord.constprop.0
-                0x0000000000000000      0x11a /tmp/ccS59WTR.o
+                0x0000000000000000      0x11a /tmp/ccy2BbKQ.o
  .text.RefPersist
-                0x0000000000000000      0x700 /tmp/ccS59WTR.o
+                0x0000000000000000      0x700 /tmp/ccy2BbKQ.o
  .text.IR_ProjectConfig
-                0x0000000000000000        0x8 /tmp/ccS59WTR.o
+                0x0000000000000000        0x8 /tmp/ccy2BbKQ.o
  .text.IR_ReferencePersistedBytes
-                0x0000000000000000       0x65 /tmp/ccS59WTR.o
+                0x0000000000000000       0x65 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceExportedBytes
-                0x0000000000000000        0x7 /tmp/ccS59WTR.o
+                0x0000000000000000        0x7 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceContinuousTraceRecords
-                0x0000000000000000        0x3 /tmp/ccS59WTR.o
+                0x0000000000000000        0x3 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceExportMatchesPersistence
-                0x0000000000000000       0x64 /tmp/ccS59WTR.o
+                0x0000000000000000       0x64 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceHasPendingPersistentEvidence
-                0x0000000000000000       0x14 /tmp/ccS59WTR.o
+                0x0000000000000000       0x14 /tmp/ccy2BbKQ.o
  .text.IR_ReferencePendingPersistentCount
-                0x0000000000000000       0x51 /tmp/ccS59WTR.o
+                0x0000000000000000       0x51 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceLastPersistedRecordId
-                0x0000000000000000        0x7 /tmp/ccS59WTR.o
+                0x0000000000000000        0x7 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceReadPersistentByte
-                0x0000000000000000       0x6f /tmp/ccS59WTR.o
+                0x0000000000000000       0x6f /tmp/ccy2BbKQ.o
  .text.IR_ReferenceSetPersistFailureStep
-                0x0000000000000000        0x7 /tmp/ccS59WTR.o
+                0x0000000000000000        0x7 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceEnablePersistPauseInjection
-                0x0000000000000000        0x8 /tmp/ccS59WTR.o
+                0x0000000000000000        0x8 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceSimulateRecovery
-                0x0000000000000000        0x5 /tmp/ccS59WTR.o
+                0x0000000000000000        0x5 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceSimulateRestart
-                0x0000000000000000       0x24 /tmp/ccS59WTR.o
+                0x0000000000000000       0x24 /tmp/ccy2BbKQ.o
  .text.IR_ReferenceResetPersistentStore
-                0x0000000000000000       0x76 /tmp/ccS59WTR.o
+                0x0000000000000000       0x76 /tmp/ccy2BbKQ.o
  .data.rel.ro.local.g_reference_config
-                0x0000000000000000       0x28 /tmp/ccS59WTR.o
+                0x0000000000000000       0x28 /tmp/ccy2BbKQ.o
  .data.rel.ro.local.g_export_ops
-                0x0000000000000000       0x30 /tmp/ccS59WTR.o
+                0x0000000000000000       0x30 /tmp/ccy2BbKQ.o
  .data.rel.ro.local.g_persistent_export_ops
-                0x0000000000000000       0x20 /tmp/ccS59WTR.o
+                0x0000000000000000       0x20 /tmp/ccy2BbKQ.o
  .data.rel.ro.local.g_persistence_ops
-                0x0000000000000000        0x8 /tmp/ccS59WTR.o
+                0x0000000000000000        0x8 /tmp/ccy2BbKQ.o
  .data.rel.ro.local.g_platform_ops
-                0x0000000000000000       0x40 /tmp/ccS59WTR.o
+                0x0000000000000000       0x40 /tmp/ccy2BbKQ.o
  .bss.g_timestamp
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_export_record_id
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_export_expected_length
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_exported_length
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_exported
-                0x0000000000000000     0x4000 /tmp/ccS59WTR.o
+                0x0000000000000000     0x4000 /tmp/ccy2BbKQ.o
  .bss.g_pause_injection_enabled
-                0x0000000000000000        0x1 /tmp/ccS59WTR.o
+                0x0000000000000000        0x1 /tmp/ccy2BbKQ.o
  .bss.g_persist_failure_step
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_last_persisted_record_id
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_next_record_id
-                0x0000000000000000        0x4 /tmp/ccS59WTR.o
+                0x0000000000000000        0x4 /tmp/ccy2BbKQ.o
  .bss.g_next_generation
-                0x0000000000000000        0x8 /tmp/ccS59WTR.o
+                0x0000000000000000        0x8 /tmp/ccy2BbKQ.o
  .bss.g_staging
-                0x0000000000000000     0x4000 /tmp/ccS59WTR.o
- .bss.g_slots   0x0000000000000000     0x8050 /tmp/ccS59WTR.o
- .rodata.cst8   0x0000000000000000        0x8 /tmp/ccS59WTR.o
- .text          0x0000000000000000        0x0 /tmp/ccqBtVxR.o
- .data          0x0000000000000000        0x0 /tmp/ccqBtVxR.o
- .bss           0x0000000000000000        0x0 /tmp/ccqBtVxR.o
+                0x0000000000000000     0x4000 /tmp/ccy2BbKQ.o
+ .bss.g_slots   0x0000000000000000     0x8050 /tmp/ccy2BbKQ.o
+ .rodata.cst8   0x0000000000000000        0x8 /tmp/ccy2BbKQ.o
+ .text          0x0000000000000000        0x0 /tmp/ccWRuPyV.o
+ .data          0x0000000000000000        0x0 /tmp/ccWRuPyV.o
+ .bss           0x0000000000000000        0x0 /tmp/ccWRuPyV.o
  .text          0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
  .data          0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
  .bss           0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
@@ -174,10 +174,10 @@ Linker script and memory map
 LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/Scrt1.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crti.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
-LOAD /tmp/ccNZLKeI.o
-LOAD /tmp/ccAJnwET.o
-LOAD /tmp/ccS59WTR.o
-LOAD /tmp/ccqBtVxR.o
+LOAD /tmp/ccmaSfMC.o
+LOAD /tmp/ccSwt2Hb.o
+LOAD /tmp/ccy2BbKQ.o
+LOAD /tmp/ccWRuPyV.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/14/libgcc.a
 LOAD /usr/lib/gcc/x86_64-linux-gnu/14/libgcc_s.so
 START GROUP
@@ -310,7 +310,7 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
  .text.startup.main
-                0x0000000000001060      0x113 /tmp/ccqBtVxR.o
+                0x0000000000001060      0x113 /tmp/ccWRuPyV.o
                 0x0000000000001060                main
  *(.text.hot .text.hot.*)
  *(SORT_BY_NAME(.text.sorted.*))
@@ -322,26 +322,26 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
  .text          0x00000000000011b0       0xb9 /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
  *fill*         0x0000000000001269        0x7 
  .text.IR_EarlyInit
-                0x0000000000001270        0x6 /tmp/ccNZLKeI.o
+                0x0000000000001270        0x6 /tmp/ccmaSfMC.o
                 0x0000000000001270                IR_EarlyInit
  *fill*         0x0000000000001276        0xa 
- .text.IR_Init  0x0000000000001280        0x6 /tmp/ccNZLKeI.o
+ .text.IR_Init  0x0000000000001280        0x6 /tmp/ccmaSfMC.o
                 0x0000000000001280                IR_Init
  *fill*         0x0000000000001286        0xa 
  .text.IR_SystemStable
-                0x0000000000001290        0x1 /tmp/ccNZLKeI.o
+                0x0000000000001290        0x1 /tmp/ccmaSfMC.o
                 0x0000000000001290                IR_SystemStable
  *fill*         0x0000000000001291        0xf 
  .text.IR_GetStatus
-                0x00000000000012a0        0x6 /tmp/ccNZLKeI.o
+                0x00000000000012a0        0x6 /tmp/ccmaSfMC.o
                 0x00000000000012a0                IR_GetStatus
  *fill*         0x00000000000012a6        0xa 
  .text.IR_ServiceRequestExport
-                0x00000000000012b0        0x6 /tmp/ccAJnwET.o
+                0x00000000000012b0        0x6 /tmp/ccSwt2Hb.o
                 0x00000000000012b0                IR_ServiceRequestExport
  *fill*         0x00000000000012b6        0xa 
  .text.IR_ServiceProcess
-                0x00000000000012c0        0x1 /tmp/ccAJnwET.o
+                0x00000000000012c0        0x1 /tmp/ccSwt2Hb.o
                 0x00000000000012c0                IR_ServiceProcess
  *(.gnu.warning)
 
@@ -359,7 +359,7 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
 .rodata         0x0000000000002000       0x8c
  *(.rodata .rodata.* .gnu.linkonce.r.*)
  .rodata.main.str1.1
-                0x0000000000002000       0x8c /tmp/ccqBtVxR.o
+                0x0000000000002000       0x8c /tmp/ccWRuPyV.o
 
 .rodata1
  *(.rodata1)
@@ -378,13 +378,13 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
  .eh_frame      0x0000000000002118       0x40 /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/Scrt1.o
  .eh_frame      0x0000000000002158       0x18 /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/Scrt1.o
                                          0x30 (size before relaxing)
- .eh_frame      0x0000000000002170       0x50 /tmp/ccNZLKeI.o
+ .eh_frame      0x0000000000002170       0x50 /tmp/ccmaSfMC.o
                                          0xd0 (size before relaxing)
- .eh_frame      0x00000000000021c0       0x28 /tmp/ccAJnwET.o
+ .eh_frame      0x00000000000021c0       0x28 /tmp/ccSwt2Hb.o
                                          0x40 (size before relaxing)
- .eh_frame      0x00000000000021e8        0x0 /tmp/ccS59WTR.o
+ .eh_frame      0x00000000000021e8        0x0 /tmp/ccy2BbKQ.o
                                         0x4b0 (size before relaxing)
- .eh_frame      0x00000000000021e8       0x24 /tmp/ccqBtVxR.o
+ .eh_frame      0x00000000000021e8       0x24 /tmp/ccWRuPyV.o
                                          0x40 (size before relaxing)
  .eh_frame      0x000000000000220c        0x4 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
  *(.eh_frame.*)
@@ -417,13 +417,13 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
  .note.GNU-stack
                 0x0000000000002210        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
  .note.GNU-stack
-                0x0000000000002210        0x0 /tmp/ccNZLKeI.o
+                0x0000000000002210        0x0 /tmp/ccmaSfMC.o
  .note.GNU-stack
-                0x0000000000002210        0x0 /tmp/ccAJnwET.o
+                0x0000000000002210        0x0 /tmp/ccSwt2Hb.o
  .note.GNU-stack
-                0x0000000000002210        0x0 /tmp/ccS59WTR.o
+                0x0000000000002210        0x0 /tmp/ccy2BbKQ.o
  .note.GNU-stack
-                0x0000000000002210        0x0 /tmp/ccqBtVxR.o
+                0x0000000000002210        0x0 /tmp/ccWRuPyV.o
  .note.GNU-stack
                 0x0000000000002210        0x0 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
  .note.GNU-stack
@@ -603,10 +603,10 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/14/../../../x86_64-linux-gnu/crtn.o
  *(.comment)
  .comment       0x0000000000000000       0x1f /usr/lib/gcc/x86_64-linux-gnu/14/crtbeginS.o
                                          0x20 (size before relaxing)
- .comment       0x000000000000001f       0x20 /tmp/ccNZLKeI.o
- .comment       0x000000000000001f       0x20 /tmp/ccAJnwET.o
- .comment       0x000000000000001f       0x20 /tmp/ccS59WTR.o
- .comment       0x000000000000001f       0x20 /tmp/ccqBtVxR.o
+ .comment       0x000000000000001f       0x20 /tmp/ccmaSfMC.o
+ .comment       0x000000000000001f       0x20 /tmp/ccSwt2Hb.o
+ .comment       0x000000000000001f       0x20 /tmp/ccy2BbKQ.o
+ .comment       0x000000000000001f       0x20 /tmp/ccWRuPyV.o
  .comment       0x000000000000001f       0x20 /usr/lib/gcc/x86_64-linux-gnu/14/crtendS.o
 
 .gnu.build.attributes

@@ -1,4 +1,4 @@
-# v1.0.0rc04 Target Validation Plan
+# v1.0.0rc05 Target Validation Plan
 
 ## 1. Objective
 
@@ -40,6 +40,21 @@ Verify from target MAP/symbol evidence:
 - Release does not contain the Development continuous-trace queue/writer path;
 - Development contains the intended bounded continuous-trace path;
 - Recorder-OFF contains no retained recorder store or reference/target recorder storage object that should have compiled out.
+
+### TV-LIFE-01 — Probe lifecycle and feature-closure audit
+
+Review the project-added diagnostic probe inventory for the measured candidate.
+
+Verify:
+
+- every project-added probe is classified as Permanent Monitor or Development Probe;
+- every active Development Probe has a documented engineering question and removal criterion;
+- completed feature/defect work has an explicit REMOVE or PROMOTE disposition for each Development Probe introduced by that work;
+- promoted Permanent Monitors have continuing diagnostic value and are included in runtime-cost/observer-effect measurement;
+- the measured Release candidate contains no stale Development Probes merely hidden by a Development-only compile switch;
+- post-cleanup source was rebuilt and the required regression/timing confirmation was repeated where cleanup could materially alter timing or behavior.
+
+Retain the probe inventory and disposition record as target/project evidence.
 
 ### TV-RET-01 — Retained section placement
 

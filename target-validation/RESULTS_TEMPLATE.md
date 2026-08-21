@@ -1,4 +1,4 @@
-# EICRF v1.0.0rc04 Target Validation Results
+# EICRF v1.0.0rc05 Target Validation Results
 
 **Status:** PENDING TARGET EVIDENCE
 
@@ -33,11 +33,12 @@ State product/project-specific acceptance limits before entering results.
 | Persistence-service impact | PENDING |
 | Development trace impact | PENDING / N/A |
 
-## 3. Build / Retention Evidence
+## 3. Build / Probe Lifecycle / Retention Evidence
 
 | Test | Result | Evidence |
 |---|---|---|
 | TV-BUILD-01 Build-profile separation | PENDING | |
+| TV-LIFE-01 Probe lifecycle / Remove-or-Promote closure | PENDING | |
 | TV-RET-01 Retained section placement | PENDING | |
 | TV-RET-02 Reset-class survival | PENDING | |
 

@@ -40,7 +40,7 @@ run() {
 }
 
 {
-  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc04"
+  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc05"
   echo "Reference build compiler: $($CC --version | head -1)"
   echo
 } | tee -a "$VALIDATION/build.log"
@@ -154,6 +154,16 @@ if ! grep -q 'require GCC or Clang builtins' "$ROOT/reference/ir_reference_proje
   exit 1
 fi
 
+if ! grep -q '## R4. Probe Lifecycle Classification' "$ROOT/README.md"; then
+  echo "FAIL: normative probe lifecycle classification is missing" | tee -a "$VALIDATION/build.log"
+  exit 1
+fi
+
+if ! grep -q 'REMOVE or PROMOTE disposition' "$ROOT/target-validation/INTEGRATION_CHECKLIST.md"; then
+  echo "FAIL: target integration checklist is missing the Development Probe closure gate" | tee -a "$VALIDATION/build.log"
+  exit 1
+fi
+
 {
   echo "PASS: Release continuous-trace queue compiled out; Development queue present"
   echo "PASS: Full Recorder-OFF source set builds/runs and contains no retained recorder store"
@@ -163,10 +173,11 @@ fi
   echo "PASS: release/development/off builds, C99 compatibility, wide retry configuration, runtime checks, retained size guard, and MAP section check"
   echo "PASS: Target results template remains PENDING TARGET EVIDENCE in source package"
   echo "PASS: Unsupported reference atomic/publication toolchains fail closed"
+  echo "PASS: Probe lifecycle classification and Development Probe closure gate are present"
 } | tee -a "$VALIDATION/build.log"
 
 cat > "$VALIDATION/host_pre_target_gate.txt" <<'EOF'
-Embedded Incident & Crash Recorder Framework v1.0.0rc04
+Embedded Incident & Crash Recorder Framework v1.0.0rc05
 Host Pre-Target Gate
 
 Release build/run: PASS
@@ -178,6 +189,7 @@ Hardening fixture: PASS
 ASan/UBSan hardening fixture: PASS
 Retained size/MAP gate: PASS
 rc03 Minor source closure: PASS
+rc05 probe lifecycle/closure contract: PASS
 Target validation evidence: PENDING
 
 This file is host/source evidence only. It does not claim real-target retention, timing, NVM, export, SD/filesystem, or observer-effect validation.
