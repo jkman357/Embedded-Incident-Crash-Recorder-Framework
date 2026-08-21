@@ -1,0 +1,12 @@
++ ./build/release/size_report
+IR_RETAINED_RAM_BYTES=10240
+sizeof(IR_RuntimeRecord)=24
+sizeof(IR_RetainedHeader)=36
+sizeof(IR_FirstAbnormalSnapshot)=48
+sizeof(IR_FaultFrame)=40
+sizeof(IR_OperationContext)=20
+IR_TASK_RECORD_COUNT=310
+IR_ISR_RECORD_COUNT=104
+IR_TOTAL_TIMELINE_RECORD_COUNT=414
+sizeof(IR_RetainedStore)=10240
+retained_slack_bytes=0

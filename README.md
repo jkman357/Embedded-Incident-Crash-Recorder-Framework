@@ -1,12 +1,12 @@
 # Embedded Incident & Crash Recorder Framework
 ## Low-Coupling Evidence, First-Abnormal-State, Survivability & Recovery Architecture
 
-**Version:** v1.0.0rc01
-**Status:** Specification Release Candidate — Initial Public Baseline
+**Version:** v1.0.0rc02
+**Status:** Reference Implementation Release Candidate — Minimal Frozen Baseline
 **Date:** 2026-08-21  
 **Scope:** Generic embedded systems; independent of specific MCU, RTOS, storage medium, communication bus, motor controller, sensor, company, or product.
 
-**Release type:** Initial public specification / architecture RC. This RC establishes the canonical framework baseline for evidence acquisition, first-abnormal-state localization, survivability, persistence, storage operating profiles, recovery, and export.
+**Release type:** Specification + minimal reference-implementation RC. This RC preserves the public architecture baseline and adds a portable embedded-C reference implementation, compile-time Development/Release profiles, retained-store sizing, host build validation, and generic persistence/export adapter skeletons.
 
 ---
 
@@ -43,6 +43,7 @@ This RC has **one canonical definition per topic**.
 | Version | Date | Summary |
 |---|---|---|
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline for low-coupling evidence capture, first-abnormal-state localization, survivability, persistence, compile-time Development/Release storage profiles, and transactional evidence export. |
+| v1.0.0rc02 | 2026-08-21 | Minimal frozen reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, early-boot containment, persistence/export service boundaries, Development trace queue, Release on-demand export path, and compile/link/MAP/size validation. |
 
 ### Roadmap
 
@@ -52,6 +53,8 @@ v1.0.0rc02  Minimal frozen reference implementation + compile/link/MAP validatio
 v1.0.0rc03  Known-root-cause + observer-effect target validation
 v1.0.0      Stabilized baseline
 ```
+
+**Current milestone:** `v1.0.0rc02` is the frozen minimal reference-implementation baseline. Target-specific timing, linker/startup retention behavior, NVM stall behavior, and observer-effect measurements remain `v1.0.0rc03` work.
 
 ---
 
@@ -2772,47 +2775,45 @@ However, during RC convergence, maintaining **one unified document** is preferre
 
 # Part J — RC Exit Criteria
 
-Before promoting `v1.0.0rc01` to `v1.0.0rc02`:
+Before promoting `v1.0.0rc02` to target-validation work in `v1.0.0rc03`:
 
 ```text
-- specification consistency checklist passes
-- canonical public API and writer topology remain singular and internally consistent
-- Development and Release build profiles are selected only at compile time
-- Release profile cannot enable continuous SD logging at runtime
-- incident evidence and continuous development trace have distinct semantics
-- Internal Flash retention remains bounded and overflow behavior is explicit
-- SD absence/full/removal/write failure cannot block or alter core product behavior
-- Flash-to-SD export preserves the original persistent evidence until transactional completion
-- successful export does not require immediate deletion of the persistent copy
-- Development continuous logging has bounded queue/buffer and file-lifecycle policies
+- Release reference build compiles and links with warnings treated as errors
+- Development reference build compiles and links with warnings treated as errors
+- Recorder-OFF probe macros compile away without evaluating arguments
+- C99 compatibility build passes; C11 build uses _Static_assert size guards
+- selected Task ring + ISR ring + dedicated Fatal Snapshot topology is implemented
+- first-abnormal ownership uses the project bounded critical primitive and publishes validity last
+- retained recorder storage fits the configured 10 KiB ceiling
+- linked MAP/section report contains the dedicated .incident_ram section
+- early-boot containment performs no persistence/export/filesystem I/O
+- Development continuous trace uses a bounded RAM queue and low-priority service path
+- Release build compiles out the continuous trace queue/writer path
+- persistence adapter receives an explicit logical evidence view rather than a raw on-flash struct dump requirement
+- on-demand export advances in bounded service steps and verifies before marking evidence exported
+- successful export does not delete the persistent evidence bytes
 - public-release hygiene audit finds no company/product/project-specific identifiers or private implementation fingerprints
-- reference-implementation scope for rc02 is frozen
 ```
 
-`v1.0.0rc02` is implementation-oriented and should preserve these contracts without reopening broad architecture decisions unless new evidence requires it.
-
----
+The host reference build validates structure and control-flow contracts only. MCU-specific linker/startup retention, atomic critical-section timing, RTOS interaction, storage timing/endurance, and observer effect remain target-validation responsibilities.
 
 # Part K — Document Status
 
-**Current:** `v1.0.0rc01`
+**Current:** `v1.0.0rc02`
 
-This is the **Initial Public Specification Release Candidate**.
+This is the **Minimal Frozen Reference Implementation Release Candidate**.
 
-Its purpose is to establish a generic, reusable, company-independent framework baseline before freezing a minimal reference implementation.
+The public specification remains generic. The repository now also contains a portable embedded-C reference implementation and host validation harness that demonstrate the selected writer model, retained-store budget, compile-time storage profiles, persistence/export boundaries, and fail-isolated service behavior.
 
 Future revisions:
 
 ```text
-v1.0.0rc02  Minimal frozen reference implementation + compile/link/MAP validation
 v1.0.0rc03  Known-root-cause + observer-effect target validation
 ...
 v1.0.0      Stable baseline
 ```
 
 Do not edit an archived RC in place.
-
----
 
 # Part L — Failure Boundary & Survivability Contract
 
@@ -3335,22 +3336,20 @@ The emphasis remains:
 | Version | Date | Purpose |
 |---|---|---|
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline |
+| v1.0.0rc02 | 2026-08-21 | Minimal frozen reference implementation plus compile/link/MAP/size validation |
 
 Planned direction:
 
 ```text
-v1.0.0rc02 → minimal frozen reference implementation / compile / linker / MAP validation
 v1.0.0rc03 → known-root-cause + observer-effect target validation
 v1.0.0     → stabilized framework baseline
 ```
-
----
 
 # Part P — Implementation Contract
 
 ## P1. Implementation Objective
 
-`v1.0.0rc01` defines the initial public implementable contracts without binding the framework to a specific MCU, RTOS, storage technology, peripheral, company, or product. It includes compile-time storage operating profiles, bounded persistent evidence retention, and failure-isolated evidence export while keeping public examples generic and platform-neutral.
+`v1.0.0rc02` freezes the minimal public reference implementation without binding the framework to a specific MCU, RTOS, storage technology, peripheral, company, or product. It implements the selected Task/ISR/Fatal writer topology, bounded retained store, compile-time storage profiles, persistence/export service boundaries, and failure-isolated Development/Release paths while keeping platform-specific mechanisms behind adapters.
 
 The implementation model is:
 
@@ -3446,46 +3445,33 @@ Undefined behavior, blocking initialization waits, and production reset/assert b
 
 ## Q2. Runtime Evidence API
 
-Runtime writers are context-specific:
+Application probe sites use compile-time-removable macros:
 
 ```c
-void IR_EVENT_TASK(
-    uint16_t record_type,
-    uint16_t id,
-    uint32_t value0,
-    uint32_t value1);
-
-void IR_EVENT_ISR(
-    uint16_t record_type,
-    uint16_t id,
-    uint32_t value0,
-    uint32_t value1);
+IR_EVENT_TASK(record_type, id, value0, value1);
+IR_EVENT_ISR(record_type, id, value0, value1);
 ```
+
+When `IR_ENABLE != 0`, the macros map to the reference implementation entry points `IR_EventTask()` and `IR_EventIsr()`. When `IR_ENABLE == 0`, they expand to no-ops and do not evaluate their arguments.
 
 Observation / Operation / Transition are evidence semantics represented by `record_type`; they are not separate application-facing functions.
 
-The Task API must not use ISR-only assumptions.
-
-The ISR API must not depend on Task locks, persistence service state, export service state, filesystem state, or dynamic allocation.
-
----
+The Task path writes only the Task ring. The ISR path writes only the ISR ring. Neither path waits for persistence, export, filesystem, transport, or service work.
 
 ## Q3. First-Abnormal API
 
-Task and ISR paths are explicit:
+Task and ISR probe sites use:
 
 ```c
-bool IR_FIRST_ABNORMAL_TASK(
-    uint16_t object_id,
-    uint16_t rule_id,
-    uint32_t observed0,
-    uint32_t observed1);
+bool claimed = IR_FIRST_ABNORMAL_TASK(object_id,
+                                      rule_id,
+                                      observed0,
+                                      observed1);
 
-bool IR_FIRST_ABNORMAL_ISR(
-    uint16_t object_id,
-    uint16_t rule_id,
-    uint32_t observed0,
-    uint32_t observed1);
+bool claimed_isr = IR_FIRST_ABNORMAL_ISR(object_id,
+                                         rule_id,
+                                         observed0,
+                                         observed1);
 ```
 
 Return value:
@@ -3498,27 +3484,23 @@ false
 → another context already owns it, recorder is unavailable, or publication could not be completed
 ```
 
-The exact implementation must satisfy Part L and Part AA atomicity requirements.
+The reference implementation uses the project-provided bounded critical primitive for the ownership transition and publishes the fixed snapshot valid state last.
 
-Persistence requests triggered by a successful first-abnormal latch are recorder-internal/service-facing and are not required as ordinary application API.
-
----
+Persistence is requested internally after successful publication; the probe does not perform physical persistence.
 
 ## Q4. Fatal-Context API
 
-Canonical fatal API:
+Fatal integration uses:
 
 ```c
-void IR_FATAL_CAPTURE(const IR_FaultFrame *fault);
+IR_FATAL_CAPTURE(&fault_frame);
 ```
 
-This writes only the dedicated fatal snapshot.
+When enabled, the macro maps to `IR_FatalCapture()` and writes only the dedicated fatal snapshot.
 
-It does not overwrite, claim, or reinterpret First Abnormal Evidence.
+It does not overwrite, claim, or reinterpret First Abnormal Evidence. It does not perform filesystem, persistence, export, or service work from fatal context.
 
-The contract in Part L4 is authoritative for fatal-context restrictions.
-
----
+The contract in Part L4 remains authoritative for platform-specific fatal-context restrictions.
 
 ## Q5. Status API
 
@@ -3546,21 +3528,20 @@ Detailed adapter/service errors remain internal diagnostics and should not expan
 
 ## Q6. Service Interface Boundary
 
-Persistence/export service execution is not part of the ordinary application-facing hot-path API.
+Persistence/export execution is outside the ordinary application hot-path API.
 
-A project may integrate the service by:
+The frozen minimal service interface is:
 
-```text
-recorder-owned low-priority task
-project-owned low-priority task invoking an internal service entry
-periodic main-loop service in a non-RTOS target
+```c
+void      IR_ServiceProcess(void);
+IR_Result IR_ServiceRequestExport(void);
 ```
 
-Only the selected service integration is compiled for a given project.
+`IR_ServiceProcess()` is called from a project-defined low-priority task or bounded periodic main-loop service point.
+
+`IR_ServiceRequestExport()` only latches a request. A Release service/LCD command may call it after an export destination is made available; it does not perform Flash/SD/filesystem I/O in the caller context.
 
 Task/ISR/Fatal evidence calls never wait for the service.
-
----
 
 # Part R — Compile-Time Probe Interface
 
@@ -3624,7 +3605,7 @@ Example:
 #endif
 ```
 
-The exported macro names and private implementation-function names are illustrative until the reference header is frozen.
+The public probe macros in `include/incident_recorder.h` are frozen for this minimal reference baseline.
 
 Probe arguments must be side-effect free.
 
@@ -3741,34 +3722,9 @@ schema-versioned at container level
 
 ---
 
-## T2. Candidate 16-Byte Runtime Record
+## T2. Selected 24-Byte Runtime Record
 
-A practical candidate:
-
-```c
-typedef struct
-{
-    uint32_t sequence;
-    uint32_t timestamp;
-    uint16_t type;
-    uint16_t id;
-    uint32_t value;
-} IR_Record16;
-```
-
-Size:
-
-```text
-16 bytes
-```
-
-This is suitable for compact breadcrumbs but cannot carry every context field.
-
----
-
-## T3. Candidate 24-Byte Extended Record
-
-For higher-value evidence:
+`v1.0.0rc02` freezes the reference runtime timeline record as:
 
 ```c
 typedef struct
@@ -3781,26 +3737,24 @@ typedef struct
     uint16_t flags;
     uint32_t value0;
     uint32_t value1;
-} IR_Record24;
+} IR_RuntimeRecord;
 ```
 
-Expected size:
+Required compiled size:
 
 ```text
 24 bytes
 ```
 
-The framework may use:
-
-```text
-compact timeline records
-+
-separate fixed-size snapshots
-```
-
-instead of making every timeline entry large.
+The 24-byte form is selected because the canonical Task/ISR event interface carries two 32-bit values and context metadata. The previous compact 16-byte candidate is not part of the rc02 reference implementation.
 
 ---
+
+## T3. Timeline Density
+
+The reference implementation favors information completeness over maximum record count. The retained-RAM budget therefore contains fewer 24-byte runtime records than a 16-byte design would provide.
+
+Target validation must measure event density and actual history duration before changing this frozen record size or increasing retained RAM.
 
 ## T4. Record-Type Candidates
 
@@ -3938,7 +3892,7 @@ It should live in retained/protected recorder memory.
 
 # Part W — Retained-RAM Container
 
-## W1. Header Candidate
+## W1. Frozen Reference Header
 
 ```c
 typedef struct
@@ -3946,92 +3900,89 @@ typedef struct
     uint32_t magic;
     uint16_t schema_version;
     uint16_t header_size;
-
     uint32_t build_id;
     uint32_t epoch_id;
     uint32_t incident_id;
-
-    uint32_t write_index;
-    uint32_t record_count;
-    uint32_t lost_record_count;
-
     uint32_t health_flags;
     uint32_t state_flags;
-
-    uint32_t header_crc;
+    uint32_t first_abnormal_state;
+    uint32_t reset_cause_raw;
 } IR_RetainedHeader;
 ```
 
+Task/ISR ring indices and counters are intentionally stored in separate ring-state objects rather than duplicated in the common header.
+
 ---
 
-## W2. Container Direction
+## W2. Selected Dual-Ring Container
 
-Conceptual:
+The reference implementation follows the writer topology selected by Part AA:
 
 ```c
 typedef struct
 {
-    IR_RetainedHeader header;
+    IR_RetainedHeader         header;
+    IR_FirstAbnormalSnapshot  first_abnormal;
+    IR_FaultFrame             fatal_snapshot;
+    IR_OperationContext       last_operation;
 
-    IR_FirstAbnormalSnapshot first_abnormal;
-    IR_FaultFrame            fatal_snapshot;
+    IR_RingState              task_state;
+    IR_RingState              isr_state;
 
-    IR_Record16 timeline[IR_TIMELINE_RECORD_COUNT];
+    IR_RuntimeRecord          task_ring[IR_TASK_RECORD_COUNT];
+    IR_RuntimeRecord          isr_ring[IR_ISR_RECORD_COUNT];
 
+    uint8_t                   reserved[IR_RETAINED_RESERVED_BYTES];
 } IR_RetainedStore;
 ```
 
-Exact record count is compile-time configured.
+Task and ISR writers therefore never compete for one timeline index. Fatal capture remains outside both rings.
 
 ---
 
-## W3. 10 KiB Budget Direction
+## W3. 10 KiB Reference Budget
 
-The default retained-RAM ceiling is:
+The default retained-RAM ceiling remains:
 
 ```text
 10 KiB = 10,240 bytes
 ```
 
-No fixed byte split is normative in this RC.
+The reference implementation derives record capacity after subtracting fixed metadata, snapshots, two ring-state objects, operation context, and reserved bytes:
 
-The implementation shall derive timeline capacity from compiled structure sizes:
+```text
+retained budget
+- fixed retained structures
+- reserved bytes
+= timeline bytes
 
-```c
-#define IR_RETAINED_RAM_BYTES  (10U * 1024U)
-
-#define IR_TIMELINE_BYTES     (IR_RETAINED_RAM_BYTES      - sizeof(IR_RetainedHeader)      - sizeof(IR_FirstAbnormalSnapshot)      - sizeof(IR_FaultFrame)      - sizeof(IR_OperationContext)      - IR_RETAINED_RESERVED_BYTES)
-
-#define IR_TIMELINE_RECORD_COUNT     (IR_TIMELINE_BYTES / sizeof(IR_RuntimeRecord))
+timeline bytes / sizeof(IR_RuntimeRecord)
+= total timeline record count
 ```
 
-The exact names are illustrative.
+The default reference split assigns three quarters of timeline capacity to Task records and the remainder to ISR records. This split is a reference default, not a universal target requirement.
 
-Requirements:
+The host validation build reports:
 
-- compiled size must be checked with `_Static_assert` or toolchain equivalent;
-- the linker MAP file must confirm the dedicated retained section;
-- target event-density measurements determine the actual history duration;
-- the specification shall not claim that approximately 600 records are sufficient until target validation supports that claim.
+```text
+sizeof(IR_RuntimeRecord)        = 24 bytes
+IR_TASK_RECORD_COUNT            = 310
+IR_ISR_RECORD_COUNT             = 104
+IR_TOTAL_TIMELINE_RECORD_COUNT  = 414
+sizeof(IR_RetainedStore)        = 10,240 bytes
+```
 
----
+The compiled size and target linker MAP remain authoritative.
 
-## W4.
 ---
 
 ## W4. Compile-Time Size Guard
 
-Recommended:
+C11 builds use `_Static_assert`. C99 builds use an equivalent negative-array-size compile-time guard.
 
-```c
-_Static_assert(
-    sizeof(IR_RetainedStore) <= IR_RETAINED_RAM_BYTES,
-    "Incident Recorder retained RAM exceeds configured budget");
-```
+The implementation rejects a retained-store configuration that exceeds `IR_RETAINED_RAM_BYTES`.
 
-For toolchains without `_Static_assert`, use an equivalent compile-time technique.
-
----
+The linker/section example places recorder retention in `.incident_ram`; a target project must separately verify the actual retained memory region and startup clearing behavior.
 
 # Part X — Persistent Container
 
@@ -4149,7 +4100,9 @@ A simple fixed binary schema is acceptable if explicitly defined.
 
 # Part Y — Adapter Contracts
 
-## Y1. Platform Time Adapter
+## Y1. Platform Adapter
+
+The frozen reference interface is:
 
 ```c
 typedef struct
@@ -4158,107 +4111,111 @@ typedef struct
     uint32_t (*get_reset_cause_raw)(void);
     IR_ContextType (*get_context_type)(void);
     uint32_t (*get_context_id)(void);
+    IR_CriticalKey (*enter_critical)(void);
+    void (*exit_critical)(IR_CriticalKey key);
 } IR_PlatformOps;
 ```
 
-All callbacks used in hot/fatal paths must be documented as safe for those contexts.
+`enter_critical` / `exit_critical` provide the project-specific bounded primitive required for shared recorder metadata and first-abnormal ownership. The target must measure its worst-case effect.
 
 ---
 
 ## Y2. Persistence Adapter
 
-Conceptual:
+The reference persistence boundary is semantic rather than physical-media-specific:
 
 ```c
+typedef struct IR_PersistSource IR_PersistSource;
+
 typedef struct
 {
-    IR_Result (*read_slot)(
-        uint32_t slot,
-        uint32_t offset,
-        void *dst,
-        uint32_t len);
-
-    IR_Result (*write_slot)(
-        uint32_t slot,
-        uint32_t offset,
-        const void *src,
-        uint32_t len);
-
-    IR_Result (*erase_slot)(uint32_t slot);
-
-    uint32_t (*slot_count)(void);
-    uint32_t (*slot_size)(void);
+    IR_Result (*persist)(const IR_PersistSource *source);
 } IR_PersistenceOps;
 ```
 
-The core should not know whether the adapter uses:
+`IR_PersistSource` exposes fixed evidence metadata, protected snapshots, operation context, and bounded Task/ISR record-reader callbacks.
+
+The adapter owns:
 
 ```text
-internal Flash
-external Flash
-EEPROM
-FRAM
-other NVM
+serialization
+physical slot/journal selection
+CRC/integrity
+technology-specific torn-write protection
+transaction commit encoding
+wear policy
 ```
+
+The adapter shall not interpret the in-memory `IR_PersistSource` object as permission to dump compiler-native structures directly to NVM.
 
 ---
 
-## Y3. Export Adapter
+## Y3. Persistent Export Source
 
-Conceptual:
+Already-persisted evidence is exposed to the export service through:
 
 ```c
 typedef struct
 {
-    bool      (*is_available)(void);
-    IR_Result (*begin)(const IR_ExportMeta *meta);
+    bool (*has_pending)(void);
+    IR_Result (*read_meta)(uint32_t *record_id, uint32_t *payload_length);
+    IR_Result (*read_payload)(uint32_t record_id,
+                              uint32_t offset,
+                              void *dst,
+                              uint32_t len);
+    IR_Result (*mark_exported)(uint32_t record_id);
+} IR_PersistenceExportOps;
+```
+
+This boundary allows Release-mode service/LCD export to read persistent evidence without exposing physical Flash layout to recorder core.
+
+---
+
+## Y4. Export Adapter
+
+```c
+typedef struct
+{
+    bool (*is_available)(void);
+    IR_Result (*begin)(uint32_t record_id,
+                       uint32_t payload_length,
+                       uint32_t build_id,
+                       uint16_t schema_version);
     IR_Result (*write)(const void *data, uint32_t len);
     IR_Result (*end)(void);
+    IR_Result (*verify)(void);
+    void (*abort)(void);
 } IR_ExportOps;
 ```
 
-Possible implementations:
+The service writes bounded chunks. `mark_exported()` is called only after `end()` and optional `verify()` succeed. If streaming/finalization fails, optional `abort()` lets the adapter discard the incomplete destination transaction while the persistent source remains pending for retry.
 
-```text
-SD/FatFS
-USB
-UART service protocol
-network
-BLE
-```
-
-The export adapter runs only from a safe service context.
+Possible adapters include SD/filesystem, USB service transport, serial service protocol, network, or another project-defined retrieval mechanism.
 
 ---
 
-## Y4. Optional Boot-Policy Interface
+## Y5. Development Continuous-Trace Adapter
 
-Recorder core exports status.
-
-A separate boot-policy layer may consume:
+Compiled only when `IR_BUILD_PROFILE == IR_BUILD_PROFILE_DEVELOPMENT`:
 
 ```c
 typedef struct
 {
-    bool pending_incident;
-    bool previous_boot_unstable;
-    uint32_t consecutive_unstable_boots;
-    uint32_t reset_cause_raw;
-    IR_HealthFlags recorder_health;
-} IR_BootEvidence;
+    bool (*is_available)(void);
+    IR_Result (*begin)(uint32_t build_id, uint16_t schema_version);
+    IR_Result (*write_record)(IR_ContextType context,
+                              const IR_RuntimeRecord *record);
+    IR_Result (*end)(void);
+} IR_ContinuousTraceOps;
 ```
 
-Boot policy decides:
-
-```text
-NORMAL
-RECOVERY
-SERVICE
-```
-
-Recorder core shall not directly disable application subsystems.
+Task/ISR writers enqueue only to bounded RAM queues. Physical SD/filesystem work occurs from the service path.
 
 ---
+
+## Y6. Optional Boot-Policy Interface
+
+Recorder core exports status to any separate project boot-policy layer. Boot policy may decide NORMAL / RECOVERY / SERVICE behavior, but recorder core shall not directly disable application subsystems.
 
 # Part Z — Module Ownership Contract
 
@@ -4620,54 +4577,49 @@ A missing SD/USB device must not consume a tight CPU loop.
 
 # Part AD — Health Flags
 
-## AD1. Candidate Flags
+## AD1. Frozen Reference Flags
 
 ```c
 typedef uint32_t IR_HealthFlags;
 
-#define IR_HEALTH_RETENTION_INVALID   (1u << 0)
-#define IR_HEALTH_RECORD_DROPPED      (1u << 1)
-#define IR_HEALTH_PERSIST_FAILED      (1u << 2)
-#define IR_HEALTH_EXPORT_FAILED       (1u << 3)
-#define IR_HEALTH_SCHEMA_INVALID      (1u << 4)
-#define IR_HEALTH_TORN_RECORD_FOUND   (1u << 5)
-#define IR_HEALTH_SALVAGE_USED        (1u << 6)
-#define IR_HEALTH_DEGRADED            (1u << 31)
+#define IR_HEALTH_RETENTION_INVALID   (1UL << 0)
+#define IR_HEALTH_RECORD_DROPPED      (1UL << 1)
+#define IR_HEALTH_PERSIST_FAILED      (1UL << 2)
+#define IR_HEALTH_EXPORT_FAILED       (1UL << 3)
+#define IR_HEALTH_SCHEMA_INVALID      (1UL << 4)
+#define IR_HEALTH_TORN_RECORD_FOUND   (1UL << 5)
+#define IR_HEALTH_SALVAGE_USED        (1UL << 6)
+#define IR_HEALTH_INDEX_INVALID       (1UL << 7)
+#define IR_HEALTH_TRACE_DROPPED       (1UL << 8)
+#define IR_HEALTH_DEGRADED            (1UL << 31)
 ```
 
-Exact bit allocation is not yet normative.
-
----
+The reference implementation treats these flags as diagnostic state only. They do not authorize product-control behavior.
 
 # Part AE — Configuration Contract
 
 ## AE1. Static Configuration
 
-Candidate:
+The frozen reference configuration is adapter-only and statically supplied by the project:
 
 ```c
 typedef struct
 {
-    uint32_t retained_bytes;
-    uint32_t stable_boot_ticks;
-    uint16_t timeline_record_count;
-    uint16_t persistent_slot_count;
-
-    bool enable_persistence;
-    bool enable_auto_export;
-    bool enable_crash_loop_tracking;
-
-    const IR_PlatformOps    *platform;
-    const IR_PersistenceOps *persistence;
-    const IR_ExportOps      *export_ops;
+    const IR_PlatformOps          *platform;
+    const IR_ContinuousTraceOps   *continuous_trace;
+    const IR_PersistenceOps       *persistence;
+    const IR_PersistenceExportOps *persistent_export;
+    const IR_ExportOps            *export_ops;
 } IR_Config;
 ```
 
-Static compile-time configuration is preferred for deeply embedded targets.
+The project provides:
 
-`IR_BUILD_PROFILE` is authoritative for Development versus Release storage behavior. Fields such as `enable_auto_export` may select a bounded service policy within the compiled profile, but they shall not switch the firmware into another build profile and shall not enable continuous SD trace in a Release build.
+```c
+const IR_Config *IR_ProjectConfig(void);
+```
 
----
+No runtime configuration may switch Development/Release profile or activate Release continuous trace. Feature/profile authority remains compile-time configuration in `ir_config.h`.
 
 ## AE2. No Runtime Allocation
 
@@ -4828,94 +4780,95 @@ void PlatformFatalHandler(const PlatformFaultFrame *platform_fault)
 
 ---
 
-# Part AH — Specification Consistency Checklist
+# Part AH — Reference Implementation Consistency Checklist
 
-Before `v1.0.0rc02` reference implementation work is frozen:
+`v1.0.0rc02` release checklist:
 
 ```text
-[ ] exactly one canonical lifecycle API definition exists
-[ ] exactly one Task event API definition exists
-[ ] exactly one ISR event API definition exists
-[ ] exactly one first-abnormal Task/ISR API definition exists
-[ ] exactly one fatal API definition exists
-[ ] exactly one application-visible IR_Result definition exists
-[ ] writer model is selected, not presented as an unresolved option
-[ ] fatal snapshot and first-abnormal semantics are independent everywhere
-[ ] persistent logical state is separated from physical NVM encoding
-[ ] examples use only canonical API names/signatures
-[ ] no deprecated API names remain in normative text
-[ ] no normative appendix overrides earlier sections
-[ ] 10 KiB capacity claims are formula/MAP/measurement-based
-[ ] early-boot rules are containment-only and bounded
-[ ] recorder-owned indices require bounds validation
+[x] exactly one canonical lifecycle API definition exists
+[x] Task and ISR event paths are separate
+[x] first-abnormal Task/ISR ownership is one-shot and validity is published last
+[x] fatal snapshot is independent from first-abnormal ownership
+[x] selected writer model is Task ring + ISR ring + dedicated fatal snapshot
+[x] runtime record is frozen at 24 bytes in the reference implementation
+[x] retained container follows the selected dual-ring writer model
+[x] retained-store size is compile-time guarded
+[x] recorder-owned ring indices are validated before memory access
+[x] Development/Release build profile is compile-time only
+[x] Release continuous-trace queue/writer code is compiled out
+[x] persistence/export work is outside Task/ISR/Fatal hot paths
+[x] export completion does not delete the persistent evidence image
+[x] generic public examples contain no private project identifiers
 ```
 
-A document-wide symbol audit is required before release.
-
----
+Target timing and physical retention guarantees are intentionally not checked off here; they belong to rc03.
 
 # Part AI — Current Non-Goals
 
-`v1.0.0rc01` is the initial public specification RC.
-
-It does not yet claim:
+`v1.0.0rc02` does not yet claim:
 
 ```text
-frozen reference C implementation
-verified linker script
-target-verified 10 KiB retained placement
-measured atomic-latch WCET
+target-verified linker memory placement or startup retention behavior
+measured atomic-latch / critical-section WCET
 measured interrupt-off duration
-measured NVM read-while-write/stall behavior
-measured history duration
-validated early-boot WCET
-validated observer effect
+measured RTOS scheduling impact
+measured NVM read-while-write or Flash-stall behavior
+validated persistent-media endurance budget
+measured retained history duration under real event density
+validated early-boot WCET on a target MCU
+validated observer effect on control / communication deadlines
+real SD/FatFS implementation
+real Internal Flash implementation
 PC GUI implementation
 mandatory recovery boot
-all export transports
-all NVM adapters
+all export transports or NVM adapters
 complex MCU-side root-cause inference
 ```
 
-These remain implementation/target-validation responsibilities of `v1.0.0rc02` and later RCs.
-
----
+The included host adapters are synthetic validation fixtures. They prove the reference interfaces and service sequencing compile and execute; they do not substitute for target validation.
 
 # Part AJ — Current Working Conclusion
 
-`v1.0.0rc01` establishes the initial public recorder authority and bounded storage/export policy:
+`v1.0.0rc02` demonstrates that the public architecture can be expressed as a small, platform-neutral C reference implementation:
 
 ```text
-Evidence Architecture
-       ↓
-Canonical Public API
-       ↓
-Selected Task / ISR / Fatal Writer Model
-       ↓
-Retained RAM Evidence
-       ↓
-Transactional Persistent Storage
-       ↓
-Compile-Time Build Profile
-       ├─ Development → isolated continuous SD development trace
-       └─ Release     → no continuous SD trace
-                           ↓
-                   Service/LCD on-demand export
-                           ↓
-                     SD / other adapter
+Project Probe / Adapter
+        ↓
+Task Ring      ISR Ring
+     \          /
+      \        /
+   First-Abnormal Snapshot
+          +
+    Fatal Snapshot
+          ↓
+  10 KiB Retained Store
+          ↓
+ Low-Priority Service
+      ├─ Persistence Adapter
+      ├─ Release On-Demand Export
+      └─ Development Continuous Trace
 ```
 
-The storage profile does not change the primary recorder rule:
+Validated on the host reference build:
+
+```text
+Release profile      PASS
+Development profile  PASS
+Recorder OFF         PASS
+C99 compatibility    PASS
+C11 warnings-as-error PASS
+Retained size        10,240 bytes
+Task records         310
+ISR records          104
+.incident_ram MAP     present
+synthetic persist/export verification PASS
+```
+
+The implementation does not change the primary recorder rule:
 
 > Recorder, persistence, SD, and export failures must not become product failures or timing dependencies.
 
-The next RC should answer:
-
-> Can a minimal frozen reference implementation compile, link, fit the configured retained-RAM budget, implement the compile-time storage profiles, and preserve these contracts without adding hidden coupling?
-
-That is the purpose of `v1.0.0rc02`.
-
----
+The next question is no longer whether the contracts can be implemented. `v1.0.0rc03` must determine their **real target cost and diagnostic value** through known-root-cause and observer-effect validation.
 
 # Part AK — Storage Operating Modes & Evidence Export Contract
 
@@ -5424,31 +5377,131 @@ Any retained technology names must serve a generic architectural purpose rather 
 
 ---
 
-# Appendix A — Planned Next RCs (Non-Normative)
+# Part AM — v1.0.0rc02 Reference Implementation Baseline
 
-## v1.0.0rc02 — Minimal Frozen Reference Implementation
+## AM1. Repository Artifacts
 
-Expected artifacts:
+The rc02 package contains:
 
 ```text
-public .h
-core .c
-Task writer
-ISR writer
-atomic first-abnormal latch
-fatal snapshot
-retained container
-linker-section example
-early-init containment
-persistence-adapter skeleton
-compile-time Development/Release build profile
-bounded Development SD-writer skeleton
-Release on-demand export path
-health/status
-clean build output
-MAP evidence
-sizeof report
+Embedded-Incident-Crash-Recorder-Framework/
+├─ README.md
+├─ CHANGELOG.md
+├─ LICENSE
+├─ Makefile
+├─ include/
+│  ├─ incident_recorder.h
+│  ├─ incident_recorder_service.h
+│  └─ ir_config.h
+├─ src/
+│  ├─ ir_core.c
+│  ├─ ir_service.c
+│  └─ ir_internal.h
+├─ reference/
+│  ├─ main.c
+│  ├─ probe_off_check.c
+│  ├─ size_report.c
+│  ├─ ir_reference_project.c
+│  └─ ir_reference_project.h
+├─ linker/
+│  └─ incident_ram_gnu.ld
+├─ scripts/
+│  └─ build_reference.sh
+└─ validation/
+   ├─ build.log
+   ├─ reference_release.map
+   ├─ reference_development.map
+   ├─ section_report.txt
+   └─ size_report.txt
 ```
+
+Generated executables are not part of the source package.
+
+---
+
+## AM2. Frozen Reference Choices
+
+The minimal implementation freezes these choices for the reference line:
+
+```text
+C99-compatible core; C11 static assertions where available
+no dynamic allocation
+10 KiB retained-store ceiling
+24-byte runtime record
+separate Task and ISR rings
+dedicated First-Abnormal Snapshot
+dedicated Fatal Snapshot
+project-provided bounded critical primitive
+compile-time Development / Release profile
+Development-only bounded continuous-trace queues
+low-priority service processing
+on-demand Release export from already-persisted evidence
+64-byte bounded export chunk per service step
+```
+
+These are reference choices, not claims that every target must use the same Task/ISR capacity split or physical storage implementation.
+
+---
+
+## AM3. Validation Result
+
+The published host validation artifacts show:
+
+```text
+Release build/run              PASS
+Development build/run          PASS
+Recorder-OFF side-effect test  PASS
+C99 compatibility build        PASS
+C11 warnings-as-error build    PASS
+IR_RuntimeRecord               24 bytes
+IR_RetainedStore               10,240 bytes
+Task ring                      310 records
+ISR ring                       104 records
+.incident_ram in MAP/ELF       PASS
+synthetic persistence          PASS
+transactional export verify    PASS
+Release continuous trace       compiled out / no activity
+Development continuous trace   active through bounded service queue
+```
+
+The host `.incident_ram` section is structural evidence only. The supplied GNU linker fragment shows the intended `NOLOAD` retained-section contract, but actual MCU retention and startup clearing behavior must be proven on the target.
+
+---
+
+## AM4. Persistence Snapshot Consistency
+
+The minimal reference service temporarily pauses ordinary Task/ISR timeline capture while the project persistence adapter consumes one logical evidence view. This avoids persisting a self-inconsistent ring image while writers advance it.
+
+Important boundaries:
+
+- application execution is not blocked by this pause;
+- first-abnormal/fatal protected snapshots remain available for the current epoch; if protected evidence changes during persistence, the service leaves persistence requested for another cycle instead of falsely marking the newer evidence persisted;
+- the pause can lose ordinary timeline events, so persistence duration and event loss must be measured in rc03;
+- a target requiring zero recorder-event loss during persistence may replace this reference mechanism with a proven double-buffer/snapshot strategy without moving physical I/O into the hot path.
+
+The reference favors product timing over perfect evidence continuity.
+
+---
+
+## AM5. Build / Validation Command
+
+From the repository root:
+
+```sh
+make validate
+```
+
+or:
+
+```sh
+./scripts/build_reference.sh
+```
+
+The script regenerates the host validation evidence and fails if the reference builds/tests or `.incident_ram` MAP check fail.
+
+---
+
+# Appendix A — Planned Next RCs (Non-Normative)
 
 ## v1.0.0rc03 — Target Validation
 
@@ -5469,13 +5522,11 @@ recorder-metadata corruption injection
 event-flood/coalescing test
 Development continuous-SD observer-effect test
 SD absent/removed/full/write-failure test
-Release build confirms continuous SD writer is compiled out
-LCD/service persistent-storage-to-SD transactional export test
+Release build confirms continuous trace remains compiled out
+service/LCD persistent-storage-to-SD transactional export test
 ```
 
-The goal is to show that the recorder remains a low-coupling observer while preserving useful evidence across both storage build profiles.
-
----
+The goal is to show that the recorder remains a low-coupling observer on real embedded hardware while preserving useful evidence across both storage build profiles.
 
 Copyright © 2026.  
 Draft engineering architecture document.  
