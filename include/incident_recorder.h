@@ -103,7 +103,7 @@ typedef struct
     uint32_t last_operation_id;
     uint32_t last_operation_arg0;
     uint32_t last_operation_arg1;
-    uint32_t checksum_or_commit;
+    uint32_t integrity_sentinel;
 } IR_FirstAbnormalSnapshot;
 
 typedef struct
@@ -125,6 +125,8 @@ typedef struct
     uint32_t (*get_context_id)(void);
     IR_CriticalKey (*enter_critical)(void);
     void (*exit_critical)(IR_CriticalKey key);
+    bool (*try_claim_u32)(volatile uint32_t *value, uint32_t expected, uint32_t desired);
+    void (*publish_barrier)(void);
 } IR_PlatformOps;
 
 typedef struct
@@ -154,9 +156,13 @@ struct IR_PersistSource
     IR_HealthFlags health_flags;
     uint32_t task_record_count;
     uint32_t isr_record_count;
+    uint32_t task_lost_count;
+    uint32_t isr_lost_count;
+    uint32_t development_trace_lost_count;
     bool first_abnormal_valid;
     bool fatal_snapshot_valid;
     uint16_t reserved1;
+    uint32_t fatal_publish_sequence;
     IR_FirstAbnormalSnapshot first_abnormal;
     IR_FaultFrame fatal_snapshot;
     IR_OperationContext last_operation;

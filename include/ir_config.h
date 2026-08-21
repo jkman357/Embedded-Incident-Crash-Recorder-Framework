@@ -39,11 +39,11 @@
 #endif
 
 #ifndef IR_BUILD_ID
-#define IR_BUILD_ID (0x01000002UL)
+#define IR_BUILD_ID (0x01000003UL)
 #endif
 
 #ifndef IR_SCHEMA_VERSION
-#define IR_SCHEMA_VERSION (0x0102U)
+#define IR_SCHEMA_VERSION (0x0103U)
 #endif
 
 #ifndef IR_DEV_TRACE_QUEUE_RECORDS
@@ -52,6 +52,10 @@
 
 #ifndef IR_SERVICE_TRACE_BUDGET
 #define IR_SERVICE_TRACE_BUDGET (8U)
+#endif
+
+#ifndef IR_EXPORT_RETRY_INTERVAL_CALLS
+#define IR_EXPORT_RETRY_INTERVAL_CALLS (8U)
 #endif
 
 #endif /* IR_CONFIG_H */

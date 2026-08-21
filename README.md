@@ -1,12 +1,12 @@
 # Embedded Incident & Crash Recorder Framework
 ## Low-Coupling Evidence, First-Abnormal-State, Survivability & Recovery Architecture
 
-**Version:** v1.0.0rc02
-**Status:** Reference Implementation Release Candidate — Minimal Frozen Baseline
+**Version:** v1.0.0rc03
+**Status:** Reference Implementation Release Candidate — Hardening & Contract Closure
 **Date:** 2026-08-21  
 **Scope:** Generic embedded systems; independent of specific MCU, RTOS, storage medium, communication bus, motor controller, sensor, company, or product.
 
-**Release type:** Specification + minimal reference-implementation RC. This RC preserves the public architecture baseline and adds a portable embedded-C reference implementation, compile-time Development/Release profiles, retained-store sizing, host build validation, and generic persistence/export adapter skeletons.
+**Release type:** Specification + reference-implementation hardening RC. This RC preserves the public architecture baseline, closes the rc02 independent-review findings, strengthens recorder self-protection and persistence semantics, and regenerates host validation evidence before target validation.
 
 ---
 
@@ -43,18 +43,20 @@ This RC has **one canonical definition per topic**.
 | Version | Date | Summary |
 |---|---|---|
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline for low-coupling evidence capture, first-abnormal-state localization, survivability, persistence, compile-time Development/Release storage profiles, and transactional evidence export. |
-| v1.0.0rc02 | 2026-08-21 | Minimal frozen reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, early-boot containment, persistence/export service boundaries, Development trace queue, Release on-demand export path, and compile/link/MAP/size validation. |
+| v1.0.0rc02 | 2026-08-21 | Minimal reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, persistence/export boundaries, Development trace queue, Release on-demand export, and host build/MAP/size validation. |
+| v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and contract closure: Development trace metadata self-protection, bounded two-slot persistent journal, interrupted-write recovery, persistence-pause loss accounting, dedicated fatal publication state, explicit publication barrier contract, full Recorder-OFF build gate, and sanitizer-backed hardening checks. |
 
 ### Roadmap
 
 ```text
 v1.0.0rc01  Initial public specification baseline
-v1.0.0rc02  Minimal frozen reference implementation + compile/link/MAP validation
-v1.0.0rc03  Known-root-cause + observer-effect target validation
+v1.0.0rc02  Minimal reference implementation
+v1.0.0rc03  Reference implementation hardening & contract closure
+v1.0.0rc04  Known-root-cause + observer-effect target validation
 v1.0.0      Stabilized baseline
 ```
 
-**Current milestone:** `v1.0.0rc02` is the frozen minimal reference-implementation baseline. Target-specific timing, linker/startup retention behavior, NVM stall behavior, and observer-effect measurements remain `v1.0.0rc03` work.
+**Current milestone:** `v1.0.0rc03` closes the implementation-level findings identified by the rc02 independent review. Formal target validation is deferred to `v1.0.0rc04`.
 
 ---
 
@@ -2775,40 +2777,44 @@ However, during RC convergence, maintaining **one unified document** is preferre
 
 # Part J — RC Exit Criteria
 
-Before promoting `v1.0.0rc02` to target-validation work in `v1.0.0rc03`:
+Before promoting `v1.0.0rc03` to target-validation work in `v1.0.0rc04`:
 
 ```text
-- Release reference build compiles and links with warnings treated as errors
-- Development reference build compiles and links with warnings treated as errors
-- Recorder-OFF probe macros compile away without evaluating arguments
+- Release reference build compiles and runs with warnings treated as errors
+- Development reference build compiles and runs with warnings treated as errors
+- full Recorder-OFF source set compiles, links, and runs with warnings treated as errors
+- every public probe macro compiles away without evaluating arguments when IR_ENABLE=0
 - C99 compatibility build passes; C11 build uses _Static_assert size guards
-- selected Task ring + ISR ring + dedicated Fatal Snapshot topology is implemented
-- first-abnormal ownership uses the project bounded critical primitive and publishes validity last
+- Development trace read/write/count metadata is validated before every queue array access
+- invalid Development queue metadata drops evidence and reports recorder degradation instead of indexing memory
+- reference persistence uses bounded multi-generation storage; pending evidence is not reclaimed by a newer incident
+- interrupted reference persistence is rejected during recovery and leaves the previous committed pending generation usable
+- persistence capture-pause losses are reflected in Task/ISR lost counters
+- fatal snapshot ownership uses a dedicated atomic-claim path and dedicated publication state
+- First-Abnormal and Fatal valid states are authoritative publication markers preceded by the project publication barrier
 - retained recorder storage fits the configured 10 KiB ceiling
 - linked MAP/section report contains the dedicated .incident_ram section
-- early-boot containment performs no persistence/export/filesystem I/O
-- Development continuous trace uses a bounded RAM queue and low-priority service path
-- Release build compiles out the continuous trace queue/writer path
-- persistence adapter receives an explicit logical evidence view rather than a raw on-flash struct dump requirement
-- on-demand export advances in bounded service steps and verifies before marking evidence exported
-- successful export does not delete the persistent evidence bytes
-- public-release hygiene audit finds no company/product/project-specific identifiers or private implementation fingerprints
+- Release build compiles out the Development continuous-trace queue/writer path
+- hardening fixture passes AddressSanitizer/UndefinedBehaviorSanitizer
+- successful export does not delete the persistent evidence payload
+- public-release audit finds no company/product/project-specific identifiers or private implementation fingerprints
+- README/LICENSE copyright and licensing statements are consistent
 ```
 
-The host reference build validates structure and control-flow contracts only. MCU-specific linker/startup retention, atomic critical-section timing, RTOS interaction, storage timing/endurance, and observer effect remain target-validation responsibilities.
+The host reference build validates structural, defensive-correctness, persistence-model, and service-sequencing contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect remain `v1.0.0rc04` target-validation responsibilities.
 
 # Part K — Document Status
 
-**Current:** `v1.0.0rc02`
+**Current:** `v1.0.0rc03`
 
-This is the **Minimal Frozen Reference Implementation Release Candidate**.
+This is the **Reference Implementation Hardening & Contract Closure Release Candidate**.
 
-The public specification remains generic. The repository now also contains a portable embedded-C reference implementation and host validation harness that demonstrate the selected writer model, retained-store budget, compile-time storage profiles, persistence/export boundaries, and fail-isolated service behavior.
+The public architecture remains generic. The reference implementation now includes the defensive and persistence corrections required by the rc02 independent review, plus regenerated host validation evidence.
 
 Future revisions:
 
 ```text
-v1.0.0rc03  Known-root-cause + observer-effect target validation
+v1.0.0rc04  Known-root-cause + observer-effect target validation
 ...
 v1.0.0      Stable baseline
 ```
@@ -2935,7 +2941,7 @@ earliest invariant/detector abnormality successfully latched
 terminal CPU/fault evidence captured by the fatal handler
 ```
 
-A fatal handler never overwrites or competes for the first-abnormal snapshot.
+A fatal handler never overwrites or competes for the first-abnormal snapshot. The reference implementation also gives Fatal capture its own one-shot atomic claim and dedicated `fatal_state`; normal Task/service code does not publish fatal validity through a shared `state_flags` read-modify-write.
 
 Allowed fatal-context operations are limited to fixed, bounded capture such as:
 
@@ -2972,9 +2978,13 @@ Recommended flow:
 ```text
 Fatal Context
      ↓
+atomic fatal-state claim
+     ↓
 minimal fixed snapshot
      ↓
-publish fatal-snapshot valid marker
+publication barrier
+     ↓
+publish dedicated fatal-state VALID marker
      ↓
 reset / watchdog path
      ↓
@@ -3106,7 +3116,8 @@ Required behavior:
 ```text
 first eligible Task/ISR detector atomically claims ownership
 winner writes the fixed snapshot
-snapshot-valid marker is published last
+project publication barrier executes after the fixed fields are complete
+`first_abnormal_state == VALID` is published as the sole authoritative validity marker
 later detections do not overwrite it
 later detections may be recorded as propagation evidence
 fatal context does not participate in this ownership race
@@ -3144,7 +3155,7 @@ context-local sequence
 timestamp/tick
 source/object ID
 rule/event ID
-valid/commit state
+valid publication state + integrity sentinel
 ```
 
 Task and ISR timeline rings may use independent local sequence counters.
@@ -3336,12 +3347,13 @@ The emphasis remains:
 | Version | Date | Purpose |
 |---|---|---|
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline |
-| v1.0.0rc02 | 2026-08-21 | Minimal frozen reference implementation plus compile/link/MAP/size validation |
+| v1.0.0rc02 | 2026-08-21 | Minimal reference implementation plus compile/link/MAP/size validation |
+| v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and independent-review contract closure |
 
 Planned direction:
 
 ```text
-v1.0.0rc03 → known-root-cause + observer-effect target validation
+v1.0.0rc04 → known-root-cause + observer-effect target validation
 v1.0.0     → stabilized framework baseline
 ```
 
@@ -3349,7 +3361,7 @@ v1.0.0     → stabilized framework baseline
 
 ## P1. Implementation Objective
 
-`v1.0.0rc02` freezes the minimal public reference implementation without binding the framework to a specific MCU, RTOS, storage technology, peripheral, company, or product. It implements the selected Task/ISR/Fatal writer topology, bounded retained store, compile-time storage profiles, persistence/export service boundaries, and failure-isolated Development/Release paths while keeping platform-specific mechanisms behind adapters.
+`v1.0.0rc03` hardens the public reference implementation without binding the framework to a specific MCU, RTOS, storage technology, peripheral, company, or product. It implements the selected Task/ISR/Fatal writer topology, bounded retained store, compile-time storage profiles, persistence/export service boundaries, and failure-isolated Development/Release paths while keeping platform-specific mechanisms behind adapters.
 
 The implementation model is:
 
@@ -3724,7 +3736,7 @@ schema-versioned at container level
 
 ## T2. Selected 24-Byte Runtime Record
 
-`v1.0.0rc02` freezes the reference runtime timeline record as:
+`v1.0.0rc03` retains the frozen reference runtime timeline record as:
 
 ```c
 typedef struct
@@ -3826,11 +3838,11 @@ typedef struct
     uint32_t last_operation_arg0;
     uint32_t last_operation_arg1;
 
-    uint32_t checksum_or_commit;
+    uint32_t integrity_sentinel;
 } IR_FirstAbnormalSnapshot;
 ```
 
-This is a candidate, not yet frozen.
+The reference structure is frozen for this RC. `integrity_sentinel` is an integrity/check sentinel only; it is **not** the publication authority. `header.first_abnormal_state == VALID`, published only after the project publication barrier, is the sole validity marker.
 
 ---
 
@@ -3905,7 +3917,10 @@ typedef struct
     uint32_t incident_id;
     uint32_t health_flags;
     uint32_t state_flags;
-    uint32_t first_abnormal_state;
+    volatile uint32_t first_abnormal_state;
+    volatile uint32_t fatal_state;
+    volatile uint32_t fatal_publish_sequence;
+    uint32_t fatal_persisted_sequence;
     uint32_t reset_cause_raw;
 } IR_RetainedHeader;
 ```
@@ -3966,10 +3981,10 @@ The host validation build reports:
 
 ```text
 sizeof(IR_RuntimeRecord)        = 24 bytes
-IR_TASK_RECORD_COUNT            = 310
+IR_TASK_RECORD_COUNT            = 309
 IR_ISR_RECORD_COUNT             = 104
-IR_TOTAL_TIMELINE_RECORD_COUNT  = 414
-sizeof(IR_RetainedStore)        = 10,240 bytes
+IR_TOTAL_TIMELINE_RECORD_COUNT  = 413
+sizeof(IR_RetainedStore)        = 10,228 bytes
 ```
 
 The compiled size and target linker MAP remain authoritative.
@@ -4113,10 +4128,12 @@ typedef struct
     uint32_t (*get_context_id)(void);
     IR_CriticalKey (*enter_critical)(void);
     void (*exit_critical)(IR_CriticalKey key);
+    bool (*try_claim_u32)(volatile uint32_t *value, uint32_t expected, uint32_t desired);
+    void (*publish_barrier)(void);
 } IR_PlatformOps;
 ```
 
-`enter_critical` / `exit_critical` provide the project-specific bounded primitive required for shared recorder metadata and first-abnormal ownership. The target must measure its worst-case effect.
+`enter_critical` / `exit_critical` provide the project-specific bounded primitive used by shared Task/ISR recorder metadata. `try_claim_u32` provides a non-blocking atomic claim suitable for Fatal-context ownership, including the project's stated exception-nesting model. `publish_barrier` provides the compiler/memory-ordering primitive required immediately before First-Abnormal or Fatal validity publication. Each target must document context safety and measure the applicable timing cost.
 
 ---
 
@@ -4133,7 +4150,7 @@ typedef struct
 } IR_PersistenceOps;
 ```
 
-`IR_PersistSource` exposes fixed evidence metadata, protected snapshots, operation context, and bounded Task/ISR record-reader callbacks.
+`IR_PersistSource` exposes fixed evidence metadata, Task/ISR/development loss counters, protected snapshots, fatal publication sequence, operation context, and bounded Task/ISR record-reader callbacks. Loss-counter changes that occur during the reference persistence pause cause the source image to be treated as changed so a later persistence pass can include the updated completeness metadata.
 
 The adapter owns:
 
@@ -4209,7 +4226,7 @@ typedef struct
 } IR_ContinuousTraceOps;
 ```
 
-Task/ISR writers enqueue only to bounded RAM queues. Physical SD/filesystem work occurs from the service path.
+Task/ISR writers enqueue only to bounded RAM queues. Physical SD/filesystem work occurs from the service path. The generic service keeps the trace session open after `begin()`; project/session policy owns file rollover and eventual `end()` at a controlled shutdown/rotation boundary. No normal probe path invokes `end()` or waits for it.
 
 ---
 
@@ -4412,7 +4429,7 @@ Task and ISR detectors may compete for one protected first-abnormal slot using t
 
 Fatal context does not compete for that slot.
 
-The validity marker is published only after the fixed snapshot fields are complete.
+The validity marker is published only after the fixed snapshot fields are complete and the project publication barrier has executed. The First-Abnormal integrity sentinel is not a commit/publication marker.
 
 ---
 
@@ -4457,7 +4474,7 @@ incident ID
 health/lost counters
 ```
 
-The decoder must not assume these values never wrap.
+The rc03 reference uses modulo-2^32 unsigned wrap for Task/ISR local sequence, epoch ID, incident ID, fatal publish sequence, and persistent reference generation/record IDs. Diagnostic loss counters saturate at `UINT32_MAX`. The decoder must use wrap-aware ordering logic and must not assume these values never wrap.
 
 ---
 
@@ -4563,7 +4580,7 @@ EXPORTED
 FAILED
 ```
 
-Repeated failure should use bounded retry/backoff.
+Repeated failure uses a service-call countdown/backoff in the reference implementation. A project may substitute another bounded scheduling policy, but a missing destination must not be retried in a tight loop.
 
 ---
 
@@ -4782,34 +4799,44 @@ void PlatformFatalHandler(const PlatformFaultFrame *platform_fault)
 
 # Part AH — Reference Implementation Consistency Checklist
 
-`v1.0.0rc02` release checklist:
+`v1.0.0rc03` hardening checklist:
 
 ```text
 [x] exactly one canonical lifecycle API definition exists
 [x] Task and ISR event paths are separate
-[x] first-abnormal Task/ISR ownership is one-shot and validity is published last
-[x] fatal snapshot is independent from first-abnormal ownership
+[x] First-Abnormal ownership is one-shot; VALID is the authoritative publish marker
+[x] First-Abnormal publication is preceded by the project publication barrier
+[x] Fatal snapshot uses dedicated atomic claim + dedicated fatal publication state
+[x] Fatal publication does not share a normal-context state_flags read-modify-write
 [x] selected writer model is Task ring + ISR ring + dedicated fatal snapshot
-[x] runtime record is frozen at 24 bytes in the reference implementation
-[x] retained container follows the selected dual-ring writer model
+[x] runtime record remains 24 bytes
 [x] retained-store size is compile-time guarded
-[x] recorder-owned ring indices are validated before memory access
+[x] retained Task/ISR ring indices are validated before memory access
+[x] Development trace read/write/count metadata is validated before queue memory access
+[x] invalid Development queue metadata drops evidence rather than indexing the queue
 [x] Development/Release build profile is compile-time only
 [x] Release continuous-trace queue/writer code is compiled out
-[x] persistence/export work is outside Task/ISR/Fatal hot paths
-[x] export completion does not delete the persistent evidence image
+[x] persistence/export work remains outside Task/ISR/Fatal hot paths
+[x] reference persistence uses two bounded generations and never overwrites pending evidence
+[x] incomplete reference persistence is rejected by recovery validation
+[x] persistence-pause Task/ISR losses are counted
+[x] full Recorder-OFF source set compiles/links/runs cleanly under warnings-as-errors
+[x] all public probe macros are non-evaluating when disabled
+[x] hardening fixture passes ASan/UBSan
+[x] export completion does not delete the persistent evidence payload
 [x] generic public examples contain no private project identifiers
+[x] README and included MIT LICENSE are consistent
 ```
 
-Target timing and physical retention guarantees are intentionally not checked off here; they belong to rc03.
+Target timing and physical retention guarantees remain intentionally open for `v1.0.0rc04`.
 
 # Part AI — Current Non-Goals
 
-`v1.0.0rc02` does not yet claim:
+`v1.0.0rc03` does not yet claim:
 
 ```text
 target-verified linker memory placement or startup retention behavior
-measured atomic-latch / critical-section WCET
+measured critical-section / atomic-claim / publication-barrier WCET
 measured interrupt-off duration
 measured RTOS scheduling impact
 measured NVM read-while-write or Flash-stall behavior
@@ -4825,50 +4852,52 @@ all export transports or NVM adapters
 complex MCU-side root-cause inference
 ```
 
-The included host adapters are synthetic validation fixtures. They prove the reference interfaces and service sequencing compile and execute; they do not substitute for target validation.
+The included host adapters remain validation fixtures. The two-slot persistent journal models required transaction/retention semantics but does not replace target NVM validation.
 
 # Part AJ — Current Working Conclusion
 
-`v1.0.0rc02` demonstrates that the public architecture can be expressed as a small, platform-neutral C reference implementation:
+`v1.0.0rc03` closes the implementation findings that blocked formal target validation after rc02:
 
 ```text
-Project Probe / Adapter
-        ↓
-Task Ring      ISR Ring
-     \          /
-      \        /
-   First-Abnormal Snapshot
-          +
-    Fatal Snapshot
-          ↓
-  10 KiB Retained Store
-          ↓
- Low-Priority Service
-      ├─ Persistence Adapter
-      ├─ Release On-Demand Export
-      └─ Development Continuous Trace
+Development trace metadata validation
+        +
+Bounded two-slot persistent journal
+        +
+Interrupted-write recovery model
+        +
+Persistence-pause loss accounting
+        +
+Dedicated Fatal atomic claim/publication state
+        +
+Explicit First-Abnormal/Fatal publication barrier
+        +
+Full Recorder-OFF build validation
+        +
+Sanitizer-backed hardening fixture
 ```
 
-Validated on the host reference build:
+Host validation now demonstrates:
 
 ```text
-Release profile      PASS
-Development profile  PASS
-Recorder OFF         PASS
-C99 compatibility    PASS
-C11 warnings-as-error PASS
-Retained size        10,240 bytes
-Task records         310
-ISR records          104
-.incident_ram MAP     present
-synthetic persist/export verification PASS
+Release profile             PASS
+Development profile         PASS
+Full Recorder-OFF build     PASS
+Probe non-evaluation OFF    PASS
+C99 compatibility           PASS
+C11 warnings-as-error       PASS
+Hardening fixture           PASS
+ASan/UBSan hardening        PASS
+Retained store              10,228 bytes <= 10,240-byte ceiling
+Task records                309
+ISR records                 104
+.incident_ram MAP            present
 ```
 
-The implementation does not change the primary recorder rule:
+The implementation continues to prioritize:
 
 > Recorder, persistence, SD, and export failures must not become product failures or timing dependencies.
 
-The next question is no longer whether the contracts can be implemented. `v1.0.0rc03` must determine their **real target cost and diagnostic value** through known-root-cause and observer-effect validation.
+The next formal milestone is `v1.0.0rc04`: real-target known-root-cause and observer-effect validation.
 
 # Part AK — Storage Operating Modes & Evidence Export Contract
 
@@ -5377,11 +5406,11 @@ Any retained technology names must serve a generic architectural purpose rather 
 
 ---
 
-# Part AM — v1.0.0rc02 Reference Implementation Baseline
+# Part AM — v1.0.0rc03 Reference Implementation Hardening Baseline
 
 ## AM1. Repository Artifacts
 
-The rc02 package contains:
+The rc03 package contains:
 
 ```text
 Embedded-Incident-Crash-Recorder-Framework/
@@ -5399,6 +5428,7 @@ Embedded-Incident-Crash-Recorder-Framework/
 │  └─ ir_internal.h
 ├─ reference/
 │  ├─ main.c
+│  ├─ hardening_check.c
 │  ├─ probe_off_check.c
 │  ├─ size_report.c
 │  ├─ ir_reference_project.c
@@ -5411,79 +5441,118 @@ Embedded-Incident-Crash-Recorder-Framework/
    ├─ build.log
    ├─ reference_release.map
    ├─ reference_development.map
+   ├─ reference_off.map
+   ├─ reference_hardening.map
    ├─ section_report.txt
-   └─ size_report.txt
+   ├─ size_report.txt
+   └─ hardening_disassembly.txt
 ```
 
 Generated executables are not part of the source package.
 
----
+## AM2. Hardening Changes
 
-## AM2. Frozen Reference Choices
-
-The minimal implementation freezes these choices for the reference line:
+The rc03 reference line closes the rc02 independent-review blockers with these implementation choices:
 
 ```text
-C99-compatible core; C11 static assertions where available
-no dynamic allocation
-10 KiB retained-store ceiling
-24-byte runtime record
-separate Task and ISR rings
-dedicated First-Abnormal Snapshot
-dedicated Fatal Snapshot
-project-provided bounded critical primitive
-compile-time Development / Release profile
-Development-only bounded continuous-trace queues
-low-priority service processing
-on-demand Release export from already-persisted evidence
-64-byte bounded export chunk per service step
+Development trace queue
+→ validate read_index / write_index / count before every array access
+→ invalid metadata is dropped and reported; it is not silently normalized
+
+Persistent evidence
+→ two bounded generations
+→ pending generation is never an eviction candidate
+→ empty slot preferred; exported oldest slot may be reclaimed
+→ payload length + CRC + generation + record ID + transaction state + commit marker
+→ incomplete WRITING generations are rejected during recovery
+
+Persistence snapshot pause
+→ ordinary Task/ISR evidence omitted during the pause increments the corresponding lost counter
+
+Fatal snapshot
+→ dedicated atomic claim callback
+→ dedicated fatal_state
+→ first fatal publication wins for the epoch
+→ no shared state_flags read-modify-write from fatal context
+
+Publication ordering
+→ First-Abnormal/Fatal validity states are the sole publication markers
+→ project publish_barrier executes before VALID publication
+→ First-Abnormal integrity_sentinel is not a commit marker
+
+Recorder OFF
+→ complete reference source set compiles, links, and runs with IR_ENABLE=0
+→ retained recorder store is absent from the OFF executable
+→ all public probe macro arguments remain unevaluated
 ```
-
-These are reference choices, not claims that every target must use the same Task/ISR capacity split or physical storage implementation.
-
----
 
 ## AM3. Validation Result
 
 The published host validation artifacts show:
 
 ```text
-Release build/run              PASS
-Development build/run          PASS
-Recorder-OFF side-effect test  PASS
-C99 compatibility build        PASS
-C11 warnings-as-error build    PASS
-IR_RuntimeRecord               24 bytes
-IR_RetainedStore               10,240 bytes
-Task ring                      310 records
-ISR ring                       104 records
-.incident_ram in MAP/ELF       PASS
-synthetic persistence          PASS
-transactional export verify    PASS
-Release continuous trace       compiled out / no activity
-Development continuous trace   active through bounded service queue
+Release build/run                    PASS
+Development build/run                PASS
+Full Recorder-OFF build/run          PASS
+Recorder-OFF macro non-evaluation    PASS
+C99 compatibility build              PASS
+C11 warnings-as-error build          PASS
+Hardening regression fixture         PASS
+ASan/UBSan hardening fixture          PASS
+IR_RuntimeRecord                     24 bytes
+IR_RetainedStore                     10,228 bytes
+Configured retained ceiling          10,240 bytes
+Task ring                            309 records
+ISR ring                             104 records
+.incident_ram in MAP/ELF             PASS
+Release continuous trace             compiled out / no activity
+Development continuous trace         active through bounded service queue
 ```
 
-The host `.incident_ram` section is structural evidence only. The supplied GNU linker fragment shows the intended `NOLOAD` retained-section contract, but actual MCU retention and startup clearing behavior must be proven on the target.
+The hardening fixture specifically exercises:
 
----
+```text
+corrupted Development write_index
+corrupted Development read_index
+two simultaneous pending persistent generations
+capacity exhaustion without pending-evidence overwrite
+interruption after transaction begin
+interruption after payload write
+recovery rejection of incomplete generations
+first-fatal-wins publication
+Task/ISR lost-count accounting during persistence capture pause
+```
 
-## AM4. Persistence Snapshot Consistency
+The host `.incident_ram` section remains structural evidence only. The GNU linker fragment shows the intended `NOLOAD` contract; real reset retention is a target property.
 
-The minimal reference service temporarily pauses ordinary Task/ISR timeline capture while the project persistence adapter consumes one logical evidence view. This avoids persisting a self-inconsistent ring image while writers advance it.
+## AM4. Bounded Persistent Journal Policy
 
-Important boundaries:
+The host reference uses two slots only to demonstrate the normative behavior compactly. It is not a universal required slot count.
 
-- application execution is not blocked by this pause;
-- first-abnormal/fatal protected snapshots remain available for the current epoch; if protected evidence changes during persistence, the service leaves persistence requested for another cycle instead of falsely marking the newer evidence persisted;
-- the pause can lose ordinary timeline events, so persistence duration and event loss must be measured in rc03;
-- a target requiring zero recorder-event loss during persistence may replace this reference mechanism with a proven double-buffer/snapshot strategy without moving physical I/O into the hot path.
+Reference reclaim priority:
 
-The reference favors product timing over perfect evidence continuity.
+```text
+EMPTY
+  ↓
+oldest EXPORTED generation
+  ↓
+no eligible slot → persistence request fails/degrades diagnostically
+```
 
----
+A `PENDING` generation is not overwritten merely because a newer incident arrives. If all slots are pending, the reference refuses the newer persistent write rather than destroying older unexported evidence. A product may define a different bounded policy only if its priority/eviction rules are explicit and preserve the framework's evidence-retention contract.
 
-## AM5. Build / Validation Command
+## AM5. Persistence Snapshot Consistency
+
+The service still temporarily pauses ordinary Task/ISR timeline capture while the persistence adapter consumes a coherent logical view. The rc03 difference is that this intentional evidence loss is observable:
+
+- Task records arriving during the persistence pause increment `task_lost_count`;
+- ISR records arriving during the persistence pause increment `isr_lost_count`;
+- product/application execution is not paused by the recorder mechanism;
+- First-Abnormal and Fatal protected evidence can still publish independently; if they change while persistence is in progress, the service keeps persistence pending for another cycle.
+
+A target that requires zero diagnostic loss may replace this mechanism with a proven bounded snapshot strategy, but physical I/O still must not move into hot paths.
+
+## AM6. Build / Validation Command
 
 From the repository root:
 
@@ -5497,13 +5566,11 @@ or:
 ./scripts/build_reference.sh
 ```
 
-The script regenerates the host validation evidence and fails if the reference builds/tests or `.incident_ram` MAP check fail.
-
----
+The script regenerates all published host validation evidence and fails if any reference, OFF, hardening, sanitizer, retained-size, profile-separation, or MAP gate fails.
 
 # Appendix A — Planned Next RCs (Non-Normative)
 
-## v1.0.0rc03 — Target Validation
+## v1.0.0rc04 — Target Validation
 
 Expected validation:
 
@@ -5514,10 +5581,10 @@ fixed firmware + recorder ON
 execution-time audit
 stack audit
 ISR latency
-interrupt-off timing
+critical-section / atomic-claim / publication-barrier timing
 NVM stall/read-while-write behavior
-early-boot fault injection
-torn-write injection
+early-boot reset/fault injection
+persistent transaction interruption testing on actual target NVM
 recorder-metadata corruption injection
 event-flood/coalescing test
 Development continuous-SD observer-effect test
@@ -5526,8 +5593,9 @@ Release build confirms continuous trace remains compiled out
 service/LCD persistent-storage-to-SD transactional export test
 ```
 
-The goal is to show that the recorder remains a low-coupling observer on real embedded hardware while preserving useful evidence across both storage build profiles.
+The goal is to show that the hardened recorder remains a low-coupling observer on real embedded hardware while preserving useful evidence across both storage build profiles.
 
-Copyright © 2026.  
-Draft engineering architecture document.  
-Use and distribution should follow the license of the target GitHub repository.
+
+Copyright © 2026 Ray Yang.  
+Licensed under the MIT License included in `LICENSE`.  
+Draft engineering architecture and reference implementation document.

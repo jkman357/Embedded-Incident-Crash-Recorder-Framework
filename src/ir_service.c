@@ -1,5 +1,7 @@
 #include "ir_internal.h"
 
+#if IR_ENABLE
+
 #define IR_EXPORT_CHUNK_BYTES (64U)
 
 static IR_Result IR_ServiceReadTaskRecord(void *context, uint32_t logical_index, IR_RuntimeRecord *record);
@@ -13,6 +15,33 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged);
 static void IR_ServiceProcessContinuousTrace(void);
 static void IR_ServiceProcessExport(void);
 static void IR_ServiceResetExport(bool call_abort);
+#if IR_ENABLE_CONTINUOUS_SD_TRACE
+static bool IR_InternalValidateTraceQueue(const IR_TraceQueue *queue);
+static void IR_InternalMarkTraceMetadataInvalid(void);
+#endif
+
+#if IR_ENABLE_CONTINUOUS_SD_TRACE
+/* Validates every recorder-owned Development trace queue index before array access. */
+static bool IR_InternalValidateTraceQueue(const IR_TraceQueue *queue)
+{
+    return (queue != NULL) &&
+           (queue->read_index < IR_DEV_TRACE_QUEUE_RECORDS) &&
+           (queue->write_index < IR_DEV_TRACE_QUEUE_RECORDS) &&
+           (queue->count <= IR_DEV_TRACE_QUEUE_RECORDS);
+}
+
+/* Records an invalid Development queue state without attempting to repair it in place. */
+static void IR_InternalMarkTraceMetadataInvalid(void)
+{
+    IR_InternalSaturatingIncrement(&g_ir_runtime.dev_trace_lost_count);
+    g_ir_runtime.transient_health |=
+        IR_HEALTH_INDEX_INVALID | IR_HEALTH_TRACE_DROPPED |
+        IR_HEALTH_RECORD_DROPPED | IR_HEALTH_DEGRADED;
+    g_ir_retained.header.health_flags |=
+        IR_HEALTH_INDEX_INVALID | IR_HEALTH_TRACE_DROPPED |
+        IR_HEALTH_RECORD_DROPPED | IR_HEALTH_DEGRADED;
+}
+#endif
 
 /* Queues a Development-only runtime copy without involving physical SD I/O. */
 void IR_InternalQueueDevelopmentTrace(IR_ContextType context, const IR_RuntimeRecord *record)
@@ -21,7 +50,8 @@ void IR_InternalQueueDevelopmentTrace(IR_ContextType context, const IR_RuntimeRe
     IR_TraceQueue *queue;
     IR_CriticalKey key;
 
-    if ((record == NULL) || !g_ir_runtime.initialized)
+    if ((record == NULL) || !g_ir_runtime.initialized ||
+        ((context != IR_CONTEXT_TASK) && (context != IR_CONTEXT_ISR)))
     {
         return;
     }
@@ -29,11 +59,19 @@ void IR_InternalQueueDevelopmentTrace(IR_ContextType context, const IR_RuntimeRe
     queue = (context == IR_CONTEXT_ISR) ? &g_ir_isr_trace_queue : &g_ir_task_trace_queue;
 
     key = IR_InternalEnterCritical();
+    if (!IR_InternalValidateTraceQueue(queue))
+    {
+        IR_InternalMarkTraceMetadataInvalid();
+        IR_InternalExitCritical(key);
+        return;
+    }
+
     if (queue->count >= IR_DEV_TRACE_QUEUE_RECORDS)
     {
         IR_InternalSaturatingIncrement(&g_ir_runtime.dev_trace_lost_count);
+        g_ir_runtime.transient_health |= IR_HEALTH_TRACE_DROPPED | IR_HEALTH_RECORD_DROPPED;
+        g_ir_retained.header.health_flags |= IR_HEALTH_TRACE_DROPPED | IR_HEALTH_RECORD_DROPPED;
         IR_InternalExitCritical(key);
-        IR_InternalSetHealth(IR_HEALTH_TRACE_DROPPED | IR_HEALTH_RECORD_DROPPED);
         return;
     }
 
@@ -65,6 +103,14 @@ bool IR_InternalPopDevelopmentTrace(IR_ContextType *context, IR_RuntimeRecord *r
 
     key = IR_InternalEnterCritical();
 
+    if (!IR_InternalValidateTraceQueue(&g_ir_task_trace_queue) ||
+        !IR_InternalValidateTraceQueue(&g_ir_isr_trace_queue))
+    {
+        IR_InternalMarkTraceMetadataInvalid();
+        IR_InternalExitCritical(key);
+        return false;
+    }
+
     if ((g_ir_task_trace_queue.count == 0U) && (g_ir_isr_trace_queue.count == 0U))
     {
         IR_InternalExitCritical(key);
@@ -93,6 +139,13 @@ bool IR_InternalPopDevelopmentTrace(IR_ContextType *context, IR_RuntimeRecord *r
         *context = IR_CONTEXT_ISR;
     }
 
+    if (!IR_InternalValidateTraceQueue(queue) || (queue->count == 0U))
+    {
+        IR_InternalMarkTraceMetadataInvalid();
+        IR_InternalExitCritical(key);
+        return false;
+    }
+
     *record = queue->record[queue->read_index];
     ++queue->read_index;
     if (queue->read_index >= IR_DEV_TRACE_QUEUE_RECORDS)
@@ -113,7 +166,7 @@ bool IR_InternalPopDevelopmentTrace(IR_ContextType *context, IR_RuntimeRecord *r
 /* Requests a service-context export; no storage or filesystem I/O occurs here. */
 IR_Result IR_ServiceRequestExport(void)
 {
-#if !IR_ENABLE || !IR_ENABLE_EXPORT
+#if !IR_ENABLE_EXPORT
     return IR_NOT_AVAILABLE;
 #else
     if (!g_ir_runtime.initialized)
@@ -122,6 +175,7 @@ IR_Result IR_ServiceRequestExport(void)
     }
 
     g_ir_runtime.export_requested = true;
+    g_ir_runtime.export_retry_countdown = 0U;
     return IR_OK;
 #endif
 }
@@ -129,7 +183,8 @@ IR_Result IR_ServiceRequestExport(void)
 /* Processes bounded persistence, Development trace, and on-demand export work. */
 void IR_ServiceProcess(void)
 {
-#if IR_ENABLE
+    bool fatal_pending;
+
     if (!g_ir_runtime.initialized || (g_ir_runtime.config == NULL))
     {
         return;
@@ -142,10 +197,20 @@ void IR_ServiceProcess(void)
             g_ir_runtime.config->persistent_export->has_pending();
     }
 
+    fatal_pending =
+        g_ir_runtime.retained_valid &&
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID) &&
+        (g_ir_retained.header.fatal_publish_sequence !=
+         g_ir_retained.header.fatal_persisted_sequence);
+
 #if IR_ENABLE_PERSISTENCE
-    if (g_ir_runtime.previous_epoch_pending ||
-        (g_ir_runtime.retained_valid &&
-         ((g_ir_retained.header.state_flags & IR_STATE_PERSIST_REQUESTED) != 0U)))
+    if (g_ir_runtime.persistence_retry_countdown > 0U)
+    {
+        --g_ir_runtime.persistence_retry_countdown;
+    }
+    else if (g_ir_runtime.previous_epoch_pending || fatal_pending ||
+             (g_ir_runtime.retained_valid &&
+              ((g_ir_retained.header.state_flags & IR_STATE_PERSIST_REQUESTED) != 0U)))
     {
         bool snapshot_unchanged = false;
         IR_Result result = IR_ServicePersistCurrent(&snapshot_unchanged);
@@ -169,6 +234,11 @@ void IR_ServiceProcess(void)
             {
                 g_ir_retained.header.state_flags &= ~IR_STATE_PERSIST_REQUESTED;
                 g_ir_retained.header.state_flags |= IR_STATE_PERSISTED;
+                if (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID)
+                {
+                    g_ir_retained.header.fatal_persisted_sequence =
+                        g_ir_retained.header.fatal_publish_sequence;
+                }
             }
             else
             {
@@ -176,6 +246,7 @@ void IR_ServiceProcess(void)
                 g_ir_retained.header.state_flags |= IR_STATE_PERSIST_REQUESTED;
             }
             IR_InternalExitCritical(key);
+            g_ir_runtime.persistence_retry_countdown = 0U;
 
             if (was_previous && snapshot_unchanged)
             {
@@ -183,16 +254,16 @@ void IR_ServiceProcess(void)
                 IR_InternalBeginFreshEpoch(previous_epoch);
             }
         }
-        else if (result == IR_NOT_AVAILABLE)
+        else
         {
             IR_InternalSetHealth(IR_HEALTH_PERSIST_FAILED | IR_HEALTH_DEGRADED);
+            g_ir_runtime.persistence_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
         }
     }
 #endif
 
     IR_ServiceProcessContinuousTrace();
     IR_ServiceProcessExport();
-#endif
 }
 
 /* Presents a stable logical evidence view to the project persistence adapter. */
@@ -219,6 +290,7 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged)
 
     key = IR_InternalEnterCritical();
     restore_capture = g_ir_runtime.capture_enabled && !g_ir_runtime.previous_epoch_pending;
+    g_ir_runtime.persistence_capture_paused = restore_capture;
     g_ir_runtime.capture_enabled = false;
     source.build_id = g_ir_retained.header.build_id;
     source.schema_version = g_ir_retained.header.schema_version;
@@ -228,11 +300,15 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged)
     source.health_flags = g_ir_retained.header.health_flags | g_ir_runtime.transient_health;
     source.task_record_count = g_ir_retained.task_state.record_count;
     source.isr_record_count = g_ir_retained.isr_state.record_count;
+    source.task_lost_count = g_ir_retained.task_state.lost_count;
+    source.isr_lost_count = g_ir_retained.isr_state.lost_count;
+    source.development_trace_lost_count = g_ir_runtime.dev_trace_lost_count;
     source.first_abnormal_valid =
         (g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_VALID) &&
-        (g_ir_retained.first_abnormal.checksum_or_commit == IR_FIRST_ABNORMAL_COMMIT);
+        (g_ir_retained.first_abnormal.integrity_sentinel == IR_FIRST_ABNORMAL_SENTINEL);
     source.fatal_snapshot_valid =
-        ((g_ir_retained.header.state_flags & IR_STATE_FATAL_VALID) != 0U);
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID);
+    source.fatal_publish_sequence = g_ir_retained.header.fatal_publish_sequence;
     source.first_abnormal = g_ir_retained.first_abnormal;
     source.fatal_snapshot = g_ir_retained.fatal_snapshot;
     source.last_operation = g_ir_retained.last_operation;
@@ -249,15 +325,20 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged)
         {
             bool current_first_valid =
                 (g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_VALID) &&
-                (g_ir_retained.first_abnormal.checksum_or_commit == IR_FIRST_ABNORMAL_COMMIT);
+                (g_ir_retained.first_abnormal.integrity_sentinel == IR_FIRST_ABNORMAL_SENTINEL);
             bool current_fatal_valid =
-                ((g_ir_retained.header.state_flags & IR_STATE_FATAL_VALID) != 0U);
+                (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID);
 
             *snapshot_unchanged =
                 (g_ir_retained.header.epoch_id == source.epoch_id) &&
                 (g_ir_retained.header.incident_id == source.incident_id) &&
+                (g_ir_retained.task_state.lost_count == source.task_lost_count) &&
+                (g_ir_retained.isr_state.lost_count == source.isr_lost_count) &&
+                (g_ir_runtime.dev_trace_lost_count == source.development_trace_lost_count) &&
+                ((g_ir_retained.header.health_flags | g_ir_runtime.transient_health) == source.health_flags) &&
                 (current_first_valid == source.first_abnormal_valid) &&
                 (current_fatal_valid == source.fatal_snapshot_valid) &&
+                (g_ir_retained.header.fatal_publish_sequence == source.fatal_publish_sequence) &&
                 (!current_first_valid ||
                  (memcmp(&g_ir_retained.first_abnormal,
                          &source.first_abnormal,
@@ -268,6 +349,7 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged)
                          sizeof(source.fatal_snapshot)) == 0));
         }
 
+        g_ir_runtime.persistence_capture_paused = false;
         if (restore_capture)
         {
             g_ir_runtime.capture_enabled = true;
@@ -384,8 +466,6 @@ static void IR_ServiceProcessContinuousTrace(void)
             break;
         }
     }
-#else
-    /* Release builds contain no continuous-trace queue or writer path. */
 #endif
 }
 
@@ -432,6 +512,12 @@ static void IR_ServiceProcessExport(void)
         return;
     }
 
+    if (g_ir_runtime.export_retry_countdown > 0U)
+    {
+        --g_ir_runtime.export_retry_countdown;
+        return;
+    }
+
     persistent = g_ir_runtime.config->persistent_export;
     export_ops = g_ir_runtime.config->export_ops;
 
@@ -446,6 +532,7 @@ static void IR_ServiceProcessExport(void)
         (export_ops->end == NULL))
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
+        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -454,6 +541,7 @@ static void IR_ServiceProcessExport(void)
         if (!persistent->has_pending() || !export_ops->is_available())
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
+            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -461,6 +549,7 @@ static void IR_ServiceProcessExport(void)
                                   &g_ir_runtime.export_payload_length) != IR_OK)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
+            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -470,6 +559,7 @@ static void IR_ServiceProcessExport(void)
                               (uint16_t)IR_SCHEMA_VERSION) != IR_OK)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
+            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -484,6 +574,7 @@ static void IR_ServiceProcessExport(void)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
             IR_ServiceResetExport(true);
+            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -504,6 +595,7 @@ static void IR_ServiceProcessExport(void)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
             IR_ServiceResetExport(true);
+            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -515,6 +607,7 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(true);
+        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -522,6 +615,7 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(true);
+        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -529,11 +623,26 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(false);
+        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
     g_ir_runtime.persistent_export_pending = false;
     g_ir_runtime.export_requested = false;
+    g_ir_runtime.export_retry_countdown = 0U;
     IR_ServiceResetExport(false);
 #endif
 }
+
+#else /* IR_ENABLE == 0 */
+
+IR_Result IR_ServiceRequestExport(void)
+{
+    return IR_NOT_AVAILABLE;
+}
+
+void IR_ServiceProcess(void)
+{
+}
+
+#endif /* IR_ENABLE */

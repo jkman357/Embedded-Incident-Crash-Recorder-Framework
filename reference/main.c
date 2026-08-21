@@ -17,6 +17,26 @@ static int Check(bool condition, const char *message)
 
 int main(void)
 {
+#if !IR_ENABLE
+    IR_Status status;
+    int failed = 0;
+
+    failed |= Check(IR_EarlyInit() == IR_NOT_AVAILABLE, "Recorder-OFF IR_EarlyInit");
+    failed |= Check(IR_Init() == IR_NOT_AVAILABLE, "Recorder-OFF IR_Init");
+    failed |= Check(IR_GetStatus(&status) == IR_NOT_AVAILABLE, "Recorder-OFF IR_GetStatus");
+    failed |= Check(IR_ServiceRequestExport() == IR_NOT_AVAILABLE,
+                    "Recorder-OFF export request");
+    IR_ServiceProcess();
+    IR_SystemStable();
+
+    if (failed != 0)
+    {
+        return 1;
+    }
+
+    printf("PASS recorder-off full build\n");
+    return 0;
+#else
     IR_Status status;
     IR_FaultFrame fault = {0};
     uint32_t i;
@@ -52,7 +72,7 @@ int main(void)
     failed |= Check(IR_ReferencePersistedBytes() > 0U, "persistent payload non-empty");
 
     failed |= Check(IR_ServiceRequestExport() == IR_OK, "export request accepted");
-    for (i = 0U; i < 512U; ++i)
+    for (i = 0U; i < 1024U; ++i)
     {
         IR_ServiceProcess();
         if (!IR_ReferenceHasPendingPersistentEvidence())
@@ -88,4 +108,5 @@ int main(void)
            (unsigned)IR_ReferenceExportedBytes(),
            (unsigned)IR_ReferenceContinuousTraceRecords());
     return 0;
+#endif
 }

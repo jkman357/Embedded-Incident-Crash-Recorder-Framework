@@ -1,5 +1,7 @@
 #include "ir_internal.h"
 
+#if IR_ENABLE
+
 IR_RetainedStore g_ir_retained IR_RETAINED_ATTR;
 IR_RuntimeState g_ir_runtime;
 
@@ -23,6 +25,7 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
                                      uint16_t rule_id,
                                      uint32_t observed0,
                                      uint32_t observed1);
+static void IR_InternalCountPausedLoss(IR_RingState *state);
 
 /* Returns a timestamp only when the project adapter is available. */
 uint32_t IR_InternalTimestamp(void)
@@ -58,6 +61,17 @@ void IR_InternalExitCritical(IR_CriticalKey key)
         (g_ir_runtime.config->platform->exit_critical != NULL))
     {
         g_ir_runtime.config->platform->exit_critical(key);
+    }
+}
+
+/* Enforces the project/toolchain publication barrier before a valid marker is published. */
+void IR_InternalPublishBarrier(void)
+{
+    if ((g_ir_runtime.config != NULL) &&
+        (g_ir_runtime.config->platform != NULL) &&
+        (g_ir_runtime.config->platform->publish_barrier != NULL))
+    {
+        g_ir_runtime.config->platform->publish_barrier();
     }
 }
 
@@ -104,12 +118,14 @@ void IR_InternalBeginFreshEpoch(uint32_t previous_epoch)
     g_ir_retained.header.build_id = (uint32_t)IR_BUILD_ID;
     g_ir_retained.header.epoch_id = previous_epoch + 1U;
     g_ir_retained.header.first_abnormal_state = IR_STATE_FIRST_EMPTY;
+    g_ir_retained.header.fatal_state = IR_STATE_FATAL_EMPTY;
     g_ir_retained.header.reset_cause_raw = reset_cause;
     g_ir_retained.header.health_flags = g_ir_runtime.transient_health;
 
     g_ir_runtime.retained_valid = true;
     g_ir_runtime.previous_epoch_pending = false;
     g_ir_runtime.capture_enabled = true;
+    g_ir_runtime.persistence_capture_paused = false;
 }
 
 /* Validates only fixed retained metadata and bounded ring indices. */
@@ -128,6 +144,13 @@ static bool IR_InternalValidateRetainedHeader(void)
 
     if (g_ir_retained.header.header_size != (uint16_t)sizeof(IR_RetainedHeader))
     {
+        return false;
+    }
+
+    if ((g_ir_retained.header.first_abnormal_state > IR_STATE_FIRST_VALID) ||
+        (g_ir_retained.header.fatal_state > IR_STATE_FATAL_VALID))
+    {
+        g_ir_runtime.transient_health |= IR_HEALTH_TORN_RECORD_FOUND;
         return false;
     }
 
@@ -165,10 +188,8 @@ static bool IR_InternalValidateRingState(const IR_RingState *state, uint32_t cap
 /* Performs bounded previous-epoch containment without external I/O. */
 IR_Result IR_EarlyInit(void)
 {
-#if !IR_ENABLE
-    return IR_NOT_AVAILABLE;
-#else
     bool has_previous_evidence;
+    bool fatal_unpersisted;
 
     memset(&g_ir_runtime, 0, sizeof(g_ir_runtime));
     g_ir_runtime.config = IR_ProjectConfig();
@@ -186,29 +207,33 @@ IR_Result IR_EarlyInit(void)
         return IR_OK;
     }
 
-    if (g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_WRITING)
+    if ((g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_WRITING) ||
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_WRITING))
     {
         g_ir_runtime.transient_health |= IR_HEALTH_TORN_RECORD_FOUND;
     }
 
+    fatal_unpersisted =
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID) &&
+        (g_ir_retained.header.fatal_publish_sequence !=
+         g_ir_retained.header.fatal_persisted_sequence);
+
     has_previous_evidence =
-        ((((g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_VALID) ||
-           ((g_ir_retained.header.state_flags & IR_STATE_FATAL_VALID) != 0U)) &&
+        (g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_WRITING) ||
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_WRITING) ||
+        (((g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_VALID) &&
           ((g_ir_retained.header.state_flags & IR_STATE_PERSISTED) == 0U)) ||
-         ((g_ir_retained.header.state_flags & IR_STATE_PERSIST_REQUESTED) != 0U));
+         ((g_ir_retained.header.state_flags & IR_STATE_PERSIST_REQUESTED) != 0U) ||
+         fatal_unpersisted);
 
     g_ir_runtime.previous_epoch_pending = has_previous_evidence;
     g_ir_runtime.capture_enabled = !has_previous_evidence;
     return IR_OK;
-#endif
 }
 
 /* Initializes runtime capture while preserving unarchived previous-epoch evidence. */
 IR_Result IR_Init(void)
 {
-#if !IR_ENABLE
-    return IR_NOT_AVAILABLE;
-#else
     uint32_t previous_epoch = 0U;
     const IR_PlatformOps *platform;
 
@@ -225,7 +250,9 @@ IR_Result IR_Init(void)
     platform = g_ir_runtime.config->platform;
     if ((platform->get_timestamp == NULL) ||
         (platform->enter_critical == NULL) ||
-        (platform->exit_critical == NULL))
+        (platform->exit_critical == NULL) ||
+        (platform->try_claim_u32 == NULL) ||
+        (platform->publish_barrier == NULL))
     {
         g_ir_runtime.transient_health |= IR_HEALTH_DEGRADED;
         return IR_NOT_AVAILABLE;
@@ -244,13 +271,11 @@ IR_Result IR_Init(void)
     }
 
     return IR_OK;
-#endif
 }
 
 /* Marks the current epoch as having reached the project-defined stable point. */
 void IR_SystemStable(void)
 {
-#if IR_ENABLE
     IR_CriticalKey key;
 
     if (!g_ir_runtime.initialized || !g_ir_runtime.capture_enabled)
@@ -261,13 +286,11 @@ void IR_SystemStable(void)
     key = IR_InternalEnterCritical();
     g_ir_retained.header.state_flags |= IR_STATE_SYSTEM_STABLE;
     IR_InternalExitCritical(key);
-#endif
 }
 
 /* Records a Task-context event into the dedicated Task ring. */
 void IR_EventTask(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t value1)
 {
-#if IR_ENABLE
     IR_InternalWriteRecord(IR_CONTEXT_TASK,
                            &g_ir_retained.task_state,
                            g_ir_retained.task_ring,
@@ -276,18 +299,11 @@ void IR_EventTask(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t v
                            id,
                            value0,
                            value1);
-#else
-    (void)record_type;
-    (void)id;
-    (void)value0;
-    (void)value1;
-#endif
 }
 
 /* Records an ISR-context event into the dedicated ISR ring. */
 void IR_EventIsr(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t value1)
 {
-#if IR_ENABLE
     IR_InternalWriteRecord(IR_CONTEXT_ISR,
                            &g_ir_retained.isr_state,
                            g_ir_retained.isr_ring,
@@ -296,12 +312,26 @@ void IR_EventIsr(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t va
                            id,
                            value0,
                            value1);
-#else
-    (void)record_type;
-    (void)id;
-    (void)value0;
-    (void)value1;
-#endif
+}
+
+/* Counts one event intentionally omitted only because persistence paused capture. */
+static void IR_InternalCountPausedLoss(IR_RingState *state)
+{
+    IR_CriticalKey key;
+
+    if (state == NULL)
+    {
+        return;
+    }
+
+    key = IR_InternalEnterCritical();
+    if (g_ir_runtime.persistence_capture_paused)
+    {
+        IR_InternalSaturatingIncrement(&state->lost_count);
+        g_ir_runtime.transient_health |= IR_HEALTH_RECORD_DROPPED;
+        g_ir_retained.header.health_flags |= IR_HEALTH_RECORD_DROPPED;
+    }
+    IR_InternalExitCritical(key);
 }
 
 /* Writes one fixed-size runtime record with bounded metadata validation. */
@@ -318,8 +348,14 @@ static void IR_InternalWriteRecord(IR_ContextType context,
     IR_RuntimeRecord record;
     uint32_t index;
 
-    if (!g_ir_runtime.initialized || !g_ir_runtime.capture_enabled)
+    if (!g_ir_runtime.initialized)
     {
+        return;
+    }
+
+    if (!g_ir_runtime.capture_enabled)
+    {
+        IR_InternalCountPausedLoss(state);
         return;
     }
 
@@ -327,6 +363,12 @@ static void IR_InternalWriteRecord(IR_ContextType context,
 
     if (!g_ir_runtime.capture_enabled)
     {
+        if (g_ir_runtime.persistence_capture_paused)
+        {
+            IR_InternalSaturatingIncrement(&state->lost_count);
+            g_ir_runtime.transient_health |= IR_HEALTH_RECORD_DROPPED;
+            g_ir_retained.header.health_flags |= IR_HEALTH_RECORD_DROPPED;
+        }
         IR_InternalExitCritical(key);
         return;
     }
@@ -382,29 +424,13 @@ static void IR_InternalWriteRecord(IR_ContextType context,
 /* Attempts to publish the first abnormal Task-context evidence once per epoch. */
 bool IR_FirstAbnormalTask(uint16_t object_id, uint16_t rule_id, uint32_t observed0, uint32_t observed1)
 {
-#if IR_ENABLE
     return IR_InternalFirstAbnormal(IR_CONTEXT_TASK, object_id, rule_id, observed0, observed1);
-#else
-    (void)object_id;
-    (void)rule_id;
-    (void)observed0;
-    (void)observed1;
-    return false;
-#endif
 }
 
 /* Attempts to publish the first abnormal ISR-context evidence once per epoch. */
 bool IR_FirstAbnormalIsr(uint16_t object_id, uint16_t rule_id, uint32_t observed0, uint32_t observed1)
 {
-#if IR_ENABLE
     return IR_InternalFirstAbnormal(IR_CONTEXT_ISR, object_id, rule_id, observed0, observed1);
-#else
-    (void)object_id;
-    (void)rule_id;
-    (void)observed0;
-    (void)observed1;
-    return false;
-#endif
 }
 
 /* Claims, fills, and publishes the one-shot first-abnormal snapshot. */
@@ -417,6 +443,7 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
     IR_CriticalKey key;
     uint32_t sequence;
     uint32_t timestamp;
+    uint32_t epoch_id;
     IR_OperationContext operation;
 
     if (!g_ir_runtime.initialized || !g_ir_runtime.retained_valid ||
@@ -434,6 +461,7 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
 
     g_ir_retained.header.first_abnormal_state = IR_STATE_FIRST_WRITING;
     ++g_ir_retained.header.incident_id;
+    epoch_id = g_ir_retained.header.epoch_id;
     sequence = (context == IR_CONTEXT_ISR)
                    ? g_ir_retained.isr_state.next_sequence
                    : g_ir_retained.task_state.next_sequence;
@@ -443,7 +471,7 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
     timestamp = IR_InternalTimestamp();
 
     g_ir_retained.first_abnormal.magic = IR_FIRST_ABNORMAL_MAGIC;
-    g_ir_retained.first_abnormal.epoch_id = g_ir_retained.header.epoch_id;
+    g_ir_retained.first_abnormal.epoch_id = epoch_id;
     g_ir_retained.first_abnormal.sequence = sequence;
     g_ir_retained.first_abnormal.timestamp = timestamp;
     g_ir_retained.first_abnormal.object_id = object_id;
@@ -455,8 +483,10 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
     g_ir_retained.first_abnormal.last_operation_id = operation.operation_id;
     g_ir_retained.first_abnormal.last_operation_arg0 = operation.arg0;
     g_ir_retained.first_abnormal.last_operation_arg1 = operation.arg1;
-    g_ir_retained.first_abnormal.checksum_or_commit = IR_FIRST_ABNORMAL_COMMIT;
+    g_ir_retained.first_abnormal.integrity_sentinel = IR_FIRST_ABNORMAL_SENTINEL;
 
+    /* first_abnormal_state == VALID is the sole publication marker. */
+    IR_InternalPublishBarrier();
     key = IR_InternalEnterCritical();
     g_ir_retained.header.first_abnormal_state = IR_STATE_FIRST_VALID;
     g_ir_retained.header.state_flags &= ~IR_STATE_PERSISTED;
@@ -466,35 +496,44 @@ static bool IR_InternalFirstAbnormal(IR_ContextType context,
     return true;
 }
 
-/* Captures a fixed fatal snapshot without competing for first-abnormal ownership. */
+/* Captures the first fatal snapshot using a dedicated atomic-claim path. */
 void IR_FatalCapture(const IR_FaultFrame *fault)
 {
-#if IR_ENABLE
+    const IR_PlatformOps *platform;
+    uint32_t publish_sequence;
+
     if ((fault == NULL) || !g_ir_runtime.initialized || !g_ir_runtime.retained_valid ||
-        g_ir_runtime.previous_epoch_pending)
+        g_ir_runtime.previous_epoch_pending || (g_ir_runtime.config == NULL) ||
+        (g_ir_runtime.config->platform == NULL))
     {
         return;
     }
 
-    /*
-     * Fatal capture intentionally avoids Task/service locks. The fixed snapshot
-     * is published before the state bits that advertise its validity.
-     */
+    platform = g_ir_runtime.config->platform;
+    if ((platform->try_claim_u32 == NULL) || (platform->publish_barrier == NULL))
+    {
+        return;
+    }
+
+    if (!platform->try_claim_u32(&g_ir_retained.header.fatal_state,
+                                 IR_STATE_FATAL_EMPTY,
+                                 IR_STATE_FATAL_WRITING))
+    {
+        return;
+    }
+
+    publish_sequence = g_ir_retained.header.fatal_publish_sequence + 1U;
     g_ir_retained.fatal_snapshot = *fault;
-    g_ir_retained.header.state_flags &= ~IR_STATE_PERSISTED;
-    g_ir_retained.header.state_flags |= (IR_STATE_FATAL_VALID | IR_STATE_PERSIST_REQUESTED);
-#else
-    (void)fault;
-#endif
+    g_ir_retained.header.fatal_publish_sequence = publish_sequence;
+
+    /* fatal_state == VALID is the sole fatal publication marker. */
+    IR_InternalPublishBarrier();
+    g_ir_retained.header.fatal_state = IR_STATE_FATAL_VALID;
 }
 
 /* Returns a bounded aggregate status snapshot for service/UI diagnostics. */
 IR_Result IR_GetStatus(IR_Status *status)
 {
-#if !IR_ENABLE
-    (void)status;
-    return IR_NOT_AVAILABLE;
-#else
     IR_CriticalKey key;
 
     if ((status == NULL) || !g_ir_runtime.initialized)
@@ -514,9 +553,9 @@ IR_Result IR_GetStatus(IR_Status *status)
     status->development_trace_lost_count = g_ir_runtime.dev_trace_lost_count;
     status->first_abnormal_valid =
         (g_ir_retained.header.first_abnormal_state == IR_STATE_FIRST_VALID) &&
-        (g_ir_retained.first_abnormal.checksum_or_commit == IR_FIRST_ABNORMAL_COMMIT);
+        (g_ir_retained.first_abnormal.integrity_sentinel == IR_FIRST_ABNORMAL_SENTINEL);
     status->fatal_snapshot_valid =
-        ((g_ir_retained.header.state_flags & IR_STATE_FATAL_VALID) != 0U);
+        (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID);
     status->previous_epoch_pending = g_ir_runtime.previous_epoch_pending;
     status->export_pending = g_ir_runtime.export_requested ||
                              g_ir_runtime.persistent_export_pending;
@@ -524,5 +563,67 @@ IR_Result IR_GetStatus(IR_Status *status)
     IR_InternalExitCritical(key);
 
     return IR_OK;
-#endif
 }
+
+#else /* IR_ENABLE == 0 */
+
+IR_Result IR_EarlyInit(void)
+{
+    return IR_NOT_AVAILABLE;
+}
+
+IR_Result IR_Init(void)
+{
+    return IR_NOT_AVAILABLE;
+}
+
+void IR_SystemStable(void)
+{
+}
+
+void IR_EventTask(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t value1)
+{
+    (void)record_type;
+    (void)id;
+    (void)value0;
+    (void)value1;
+}
+
+void IR_EventIsr(uint16_t record_type, uint16_t id, uint32_t value0, uint32_t value1)
+{
+    (void)record_type;
+    (void)id;
+    (void)value0;
+    (void)value1;
+}
+
+bool IR_FirstAbnormalTask(uint16_t object_id, uint16_t rule_id, uint32_t observed0, uint32_t observed1)
+{
+    (void)object_id;
+    (void)rule_id;
+    (void)observed0;
+    (void)observed1;
+    return false;
+}
+
+bool IR_FirstAbnormalIsr(uint16_t object_id, uint16_t rule_id, uint32_t observed0, uint32_t observed1)
+{
+    (void)object_id;
+    (void)rule_id;
+    (void)observed0;
+    (void)observed1;
+    return false;
+}
+
+void IR_FatalCapture(const IR_FaultFrame *fault)
+{
+    (void)fault;
+}
+
+IR_Result IR_GetStatus(IR_Status *status)
+{
+    (void)status;
+    return IR_NOT_AVAILABLE;
+}
+
+#endif /* IR_ENABLE */

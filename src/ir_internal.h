@@ -7,18 +7,20 @@
 #include "incident_recorder.h"
 #include "incident_recorder_service.h"
 
-#define IR_RETAINED_MAGIC              (0x49525232UL) /* "IRR2" */
-#define IR_FIRST_ABNORMAL_MAGIC         (0x4641424EUL) /* "FABN" */
-#define IR_FIRST_ABNORMAL_COMMIT        (0x434F4D4DUL) /* "COMM" */
-#define IR_STATE_FIRST_EMPTY            (0UL)
-#define IR_STATE_FIRST_WRITING          (1UL)
-#define IR_STATE_FIRST_VALID            (2UL)
-#define IR_STATE_FATAL_VALID            (1UL << 2)
-#define IR_STATE_SYSTEM_STABLE          (1UL << 3)
-#define IR_STATE_PERSIST_REQUESTED      (1UL << 4)
-#define IR_STATE_PERSISTED              (1UL << 5)
+#define IR_RETAINED_MAGIC               (0x49525233UL) /* "IRR3" */
+#define IR_FIRST_ABNORMAL_MAGIC          (0x4641424EUL) /* "FABN" */
+#define IR_FIRST_ABNORMAL_SENTINEL       (0x53454E54UL) /* "SENT" */
+#define IR_STATE_FIRST_EMPTY             (0UL)
+#define IR_STATE_FIRST_WRITING           (1UL)
+#define IR_STATE_FIRST_VALID             (2UL)
+#define IR_STATE_FATAL_EMPTY             (0UL)
+#define IR_STATE_FATAL_WRITING           (1UL)
+#define IR_STATE_FATAL_VALID             (2UL)
+#define IR_STATE_SYSTEM_STABLE           (1UL << 0)
+#define IR_STATE_PERSIST_REQUESTED       (1UL << 1)
+#define IR_STATE_PERSISTED               (1UL << 2)
 
-#define IR_TASK_RING_NUMERATOR          (3U)
+#define IR_TASK_RING_NUMERATOR           (3U)
 #define IR_RING_DENOMINATOR              (4U)
 
 #if defined(__GNUC__)
@@ -45,7 +47,10 @@ typedef struct
     uint32_t incident_id;
     uint32_t health_flags;
     uint32_t state_flags;
-    uint32_t first_abnormal_state;
+    volatile uint32_t first_abnormal_state;
+    volatile uint32_t fatal_state;
+    volatile uint32_t fatal_publish_sequence;
+    uint32_t fatal_persisted_sequence;
     uint32_t reset_cause_raw;
 } IR_RetainedHeader;
 
@@ -84,11 +89,14 @@ typedef struct
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 _Static_assert(sizeof(IR_RuntimeRecord) == 24U, "IR_RuntimeRecord must remain 24 bytes");
+_Static_assert(IR_RETAINED_RAM_BYTES > IR_RETAINED_FIXED_BYTES,
+               "Retained RAM budget is smaller than fixed recorder metadata");
 _Static_assert(IR_TOTAL_TIMELINE_RECORD_COUNT > 0U, "Retained RAM budget leaves no timeline capacity");
 _Static_assert(sizeof(IR_RetainedStore) <= IR_RETAINED_RAM_BYTES,
                "Incident Recorder retained RAM exceeds configured budget");
 #else
 typedef char IR_StaticAssertRuntimeRecord24[(sizeof(IR_RuntimeRecord) == 24U) ? 1 : -1];
+typedef char IR_StaticAssertFixedBudget[(IR_RETAINED_RAM_BYTES > IR_RETAINED_FIXED_BYTES) ? 1 : -1];
 typedef char IR_StaticAssertTimelineCapacity[(IR_TOTAL_TIMELINE_RECORD_COUNT > 0U) ? 1 : -1];
 typedef char IR_StaticAssertRetainedBudget[(sizeof(IR_RetainedStore) <= IR_RETAINED_RAM_BYTES) ? 1 : -1];
 #endif
@@ -100,11 +108,14 @@ typedef struct
     bool retained_valid;
     bool previous_epoch_pending;
     volatile bool capture_enabled;
+    volatile bool persistence_capture_paused;
     bool export_requested;
     bool trace_started;
     bool persistent_export_pending;
     uint8_t export_state;
-    uint16_t reserved0;
+    uint8_t export_retry_countdown;
+    uint8_t persistence_retry_countdown;
+    uint8_t reserved0;
     IR_HealthFlags transient_health;
     uint32_t dev_trace_lost_count;
     uint32_t export_record_id;
@@ -123,6 +134,7 @@ typedef struct
 } IR_TraceQueue;
 #endif
 
+#if IR_ENABLE
 extern IR_RetainedStore g_ir_retained;
 extern IR_RuntimeState g_ir_runtime;
 
@@ -134,10 +146,12 @@ extern IR_TraceQueue g_ir_isr_trace_queue;
 uint32_t IR_InternalTimestamp(void);
 IR_CriticalKey IR_InternalEnterCritical(void);
 void IR_InternalExitCritical(IR_CriticalKey key);
+void IR_InternalPublishBarrier(void);
 void IR_InternalSetHealth(IR_HealthFlags flags);
 void IR_InternalSaturatingIncrement(uint32_t *value);
 void IR_InternalBeginFreshEpoch(uint32_t previous_epoch);
 void IR_InternalQueueDevelopmentTrace(IR_ContextType context, const IR_RuntimeRecord *record);
 bool IR_InternalPopDevelopmentTrace(IR_ContextType *context, IR_RuntimeRecord *record);
+#endif
 
 #endif /* IR_INTERNAL_H */
