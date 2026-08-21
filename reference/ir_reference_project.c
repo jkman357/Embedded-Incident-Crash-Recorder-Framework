@@ -3,6 +3,10 @@
 #include "incident_recorder.h"
 #include "ir_reference_project.h"
 
+#if !defined(__GNUC__) && !defined(__clang__)
+#error "Reference atomic/publication primitives require GCC or Clang builtins; provide a verified target adapter for other toolchains"
+#endif
+
 #define REFERENCE_BUFFER_BYTES      (16U * 1024U)
 #define REFERENCE_PERSIST_MAGIC     (0x49525033UL) /* "IRP3" */
 #define REFERENCE_COMMIT_MARKER     (0x434D5433UL) /* "CMT3" */
@@ -17,7 +21,7 @@
 typedef struct
 {
     uint32_t magic;
-    uint32_t generation;
+    uint64_t generation;
     uint32_t record_id;
     uint32_t payload_length;
     uint32_t payload_crc;
@@ -29,7 +33,7 @@ typedef struct
 
 static RefPersistSlot g_slots[REFERENCE_SLOT_COUNT];
 static uint8_t g_staging[REFERENCE_BUFFER_BYTES];
-static uint32_t g_next_generation;
+static uint64_t g_next_generation;
 static uint32_t g_next_record_id;
 static uint32_t g_last_persisted_record_id;
 static uint32_t g_persist_failure_step;
@@ -57,6 +61,7 @@ static RefPersistSlot *RefFindPendingOldest(void);
 static RefPersistSlot *RefFindRecord(uint32_t record_id);
 static RefPersistSlot *RefFindLatestCommitted(void);
 static RefPersistSlot *RefSelectTargetSlot(void);
+static uint32_t RefAllocateRecordId(void);
 static IR_Result RefPersist(const IR_PersistSource *source);
 static bool RefPersistentHasPending(void);
 static IR_Result RefPersistentReadMeta(uint32_t *record_id, uint32_t *payload_length);
@@ -294,6 +299,7 @@ static bool RefSlotValid(const RefPersistSlot *slot)
 /* Models reboot recovery: incomplete/invalid writes are discarded, committed data survives. */
 static void RefRecoverSlots(void)
 {
+    RefPersistSlot *newest = NULL;
     uint32_t i;
 
     for (i = 0U; i < REFERENCE_SLOT_COUNT; ++i)
@@ -316,6 +322,19 @@ static void RefRecoverSlots(void)
         {
             slot->export_state = REF_EXPORT_PENDING;
         }
+
+        if ((newest == NULL) || (slot->generation > newest->generation))
+        {
+            newest = slot;
+        }
+    }
+
+    /* Reconstruct volatile allocation state from the newest committed generation. */
+    if (newest != NULL)
+    {
+        g_next_generation = newest->generation;
+        g_next_record_id = newest->record_id;
+        g_last_persisted_record_id = newest->record_id;
     }
 }
 
@@ -330,7 +349,7 @@ static RefPersistSlot *RefFindPendingOldest(void)
     {
         RefPersistSlot *slot = &g_slots[i];
         if (RefSlotValid(slot) && (slot->export_state == REF_EXPORT_PENDING) &&
-            ((selected == NULL) || ((int32_t)(slot->generation - selected->generation) < 0)))
+            ((selected == NULL) || (slot->generation < selected->generation)))
         {
             selected = slot;
         }
@@ -367,7 +386,7 @@ static RefPersistSlot *RefFindLatestCommitted(void)
     {
         RefPersistSlot *slot = &g_slots[i];
         if (RefSlotValid(slot) &&
-            ((selected == NULL) || ((int32_t)(slot->generation - selected->generation) > 0)))
+            ((selected == NULL) || (slot->generation > selected->generation)))
         {
             selected = slot;
         }
@@ -393,7 +412,7 @@ static RefPersistSlot *RefSelectTargetSlot(void)
 
         if (RefSlotValid(slot) && (slot->export_state == REF_EXPORT_EXPORTED) &&
             ((oldest_exported == NULL) ||
-             ((int32_t)(slot->generation - oldest_exported->generation) < 0)))
+             (slot->generation < oldest_exported->generation)))
         {
             oldest_exported = slot;
         }
@@ -402,12 +421,49 @@ static RefPersistSlot *RefSelectTargetSlot(void)
     return oldest_exported;
 }
 
+/* Allocates a non-zero 32-bit public record ID that cannot collide with a live slot. */
+static uint32_t RefAllocateRecordId(void)
+{
+    uint32_t candidate = g_next_record_id;
+    uint32_t attempt;
+
+    /* With two live slots, three bounded attempts are sufficient to find an unused ID. */
+    for (attempt = 0U; attempt < (REFERENCE_SLOT_COUNT + 1U); ++attempt)
+    {
+        uint32_t i;
+        bool in_use = false;
+
+        ++candidate;
+        if (candidate == 0U)
+        {
+            ++candidate;
+        }
+
+        RefRecoverSlots();
+        for (i = 0U; i < REFERENCE_SLOT_COUNT; ++i)
+        {
+            if (RefSlotValid(&g_slots[i]) && (g_slots[i].record_id == candidate))
+            {
+                in_use = true;
+                break;
+            }
+        }
+
+        if (!in_use)
+        {
+            return candidate;
+        }
+    }
+
+    return 0U;
+}
+
 /* Builds and atomically publishes one bounded persistent generation in the host reference journal. */
 static IR_Result RefPersist(const IR_PersistSource *source)
 {
     uint32_t i;
     uint32_t offset = 0U;
-    uint32_t generation;
+    uint64_t generation;
     uint32_t record_id;
     uint32_t crc;
     IR_RuntimeRecord record;
@@ -475,8 +531,16 @@ static IR_Result RefPersist(const IR_PersistSource *source)
         return IR_NOT_AVAILABLE;
     }
 
-    generation = g_next_generation + 1U;
-    record_id = g_next_record_id + 1U;
+    if (g_next_generation == UINT64_MAX)
+    {
+        return IR_NOT_AVAILABLE;
+    }
+    generation = g_next_generation + 1ULL;
+    record_id = RefAllocateRecordId();
+    if (record_id == 0U)
+    {
+        return IR_NOT_AVAILABLE;
+    }
     crc = RefCrc32(g_staging, offset);
 
     RefClearSlot(target);
@@ -724,32 +788,18 @@ static bool RefTryClaimU32(volatile uint32_t *value, uint32_t expected, uint32_t
         return false;
     }
 
-#if defined(__GNUC__) || defined(__clang__)
     return __atomic_compare_exchange_n(value,
                                        &expected,
                                        desired,
                                        false,
                                        __ATOMIC_ACQ_REL,
                                        __ATOMIC_ACQUIRE);
-#else
-    if (*value != expected)
-    {
-        return false;
-    }
-    *value = desired;
-    return true;
-#endif
 }
 
 /* Provides the host compiler/publication barrier used before valid markers. */
 static void RefPublishBarrier(void)
 {
-#if defined(__GNUC__) || defined(__clang__)
     __atomic_thread_fence(__ATOMIC_RELEASE);
-#else
-    volatile uint32_t barrier = 0U;
-    (void)barrier;
-#endif
 }
 
 /* Returns the newest valid persistent payload size. */
@@ -836,6 +886,15 @@ void IR_ReferenceEnablePersistPauseInjection(bool enable)
 /* Runs the same bounded recovery scan that a host reboot model would perform. */
 void IR_ReferenceSimulateRecovery(void)
 {
+    RefRecoverSlots();
+}
+
+/* Simulates volatile-state loss followed by bounded reconstruction from committed slots. */
+void IR_ReferenceSimulateRestart(void)
+{
+    g_next_generation = 0U;
+    g_next_record_id = 0U;
+    g_last_persisted_record_id = 0U;
     RefRecoverSlots();
 }
 

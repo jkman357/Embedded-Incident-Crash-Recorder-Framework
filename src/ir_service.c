@@ -257,7 +257,7 @@ void IR_ServiceProcess(void)
         else
         {
             IR_InternalSetHealth(IR_HEALTH_PERSIST_FAILED | IR_HEALTH_DEGRADED);
-            g_ir_runtime.persistence_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.persistence_retry_countdown = IR_PERSIST_RETRY_INTERVAL_CALLS;
         }
     }
 #endif
@@ -309,8 +309,14 @@ static IR_Result IR_ServicePersistCurrent(bool *snapshot_unchanged)
     source.fatal_snapshot_valid =
         (g_ir_retained.header.fatal_state == IR_STATE_FATAL_VALID);
     source.fatal_publish_sequence = g_ir_retained.header.fatal_publish_sequence;
-    source.first_abnormal = g_ir_retained.first_abnormal;
-    source.fatal_snapshot = g_ir_retained.fatal_snapshot;
+    if (source.first_abnormal_valid)
+    {
+        source.first_abnormal = g_ir_retained.first_abnormal;
+    }
+    if (source.fatal_snapshot_valid)
+    {
+        source.fatal_snapshot = g_ir_retained.fatal_snapshot;
+    }
     source.last_operation = g_ir_retained.last_operation;
     IR_InternalExitCritical(key);
 
@@ -532,7 +538,7 @@ static void IR_ServiceProcessExport(void)
         (export_ops->end == NULL))
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
-        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+        g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -541,7 +547,7 @@ static void IR_ServiceProcessExport(void)
         if (!persistent->has_pending() || !export_ops->is_available())
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
-            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -549,7 +555,7 @@ static void IR_ServiceProcessExport(void)
                                   &g_ir_runtime.export_payload_length) != IR_OK)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
-            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -559,7 +565,7 @@ static void IR_ServiceProcessExport(void)
                               (uint16_t)IR_SCHEMA_VERSION) != IR_OK)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
-            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -574,7 +580,7 @@ static void IR_ServiceProcessExport(void)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
             IR_ServiceResetExport(true);
-            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -595,7 +601,7 @@ static void IR_ServiceProcessExport(void)
         {
             IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
             IR_ServiceResetExport(true);
-            g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+            g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
             return;
         }
 
@@ -607,7 +613,7 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(true);
-        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+        g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -615,7 +621,7 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(true);
-        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+        g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 
@@ -623,7 +629,7 @@ static void IR_ServiceProcessExport(void)
     {
         IR_InternalSetHealth(IR_HEALTH_EXPORT_FAILED);
         IR_ServiceResetExport(false);
-        g_ir_runtime.export_retry_countdown = (uint8_t)IR_EXPORT_RETRY_INTERVAL_CALLS;
+        g_ir_runtime.export_retry_countdown = IR_EXPORT_RETRY_INTERVAL_CALLS;
         return;
     }
 

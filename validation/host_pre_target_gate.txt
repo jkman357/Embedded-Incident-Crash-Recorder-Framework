@@ -1,0 +1,15 @@
+Embedded Incident & Crash Recorder Framework v1.0.0rc04
+Host Pre-Target Gate
+
+Release build/run: PASS
+Development build/run: PASS
+Recorder-OFF build/run: PASS
+C99/C11 host compatibility: PASS
+Wide retry configuration (>255 calls): PASS
+Hardening fixture: PASS
+ASan/UBSan hardening fixture: PASS
+Retained size/MAP gate: PASS
+rc03 Minor source closure: PASS
+Target validation evidence: PENDING
+
+This file is host/source evidence only. It does not claim real-target retention, timing, NVM, export, SD/filesystem, or observer-effect validation.

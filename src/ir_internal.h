@@ -113,9 +113,10 @@ typedef struct
     bool trace_started;
     bool persistent_export_pending;
     uint8_t export_state;
-    uint8_t export_retry_countdown;
-    uint8_t persistence_retry_countdown;
     uint8_t reserved0;
+    uint16_t reserved1;
+    uint32_t export_retry_countdown;
+    uint32_t persistence_retry_countdown;
     IR_HealthFlags transient_health;
     uint32_t dev_trace_lost_count;
     uint32_t export_record_id;

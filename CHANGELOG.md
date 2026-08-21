@@ -2,6 +2,37 @@
 
 All notable public release-candidate changes for the Embedded Incident & Crash Recorder Framework are recorded here.
 
+## v1.0.0rc04 — 2026-08-21
+
+### Fixed
+
+- Removed weak non-GNU/Clang atomic/publication fallbacks from the host reference; unsupported host toolchains now fail closed instead of silently weakening the required semantics.
+- Widened host reference journal generation ordering to 64-bit and removed implementation-defined unsigned-to-signed generation comparison.
+- Added bounded live-record-ID collision avoidance for the 32-bit public export identifier.
+- Reconstructs volatile journal allocation state from the newest committed slot during reference recovery/restart simulation.
+- Split persistence/export retry interval configuration and widened runtime retry countdowns to 32-bit so values above 255 are not truncated.
+- Persistence source formation now copies First-Abnormal and Fatal payloads only after their authoritative validity state is true.
+
+### Added
+
+- Wide retry configuration host build gate using 1000 service calls.
+- Hardening checks for restart allocator reconstruction and suppression of unpublished protected-snapshot payload bytes.
+- `target-validation/PLAN.md` with retained-memory, timing, observer-effect, NVM, export, Development trace, and known-root-cause validation cases.
+- `target-validation/INTEGRATION_CHECKLIST.md` for pre-measurement target integration.
+- `target-validation/RESULTS_TEMPLATE.md` with explicit `PENDING TARGET EVIDENCE` status.
+- `target-validation/README.md` describing the immutable source/evidence relationship.
+
+### Review basis
+
+- rc03 independent review: `PASS WITH FINDINGS`, 0 Critical, 0 Major, 4 Minor, `RC03 → TARGET VALIDATION GATE: YES`.
+- rc04 closes the four Minor source-level findings before target execution.
+
+### Validation boundary
+
+- Host/source pre-target gates pass on the supplied reference environment.
+- No real-target retention, timing, NVM, SD/filesystem, or observer-effect PASS is claimed in the source package.
+- Target results must identify the exact immutable rc04 source identity and remain separate evidence artifacts.
+
 ## v1.0.0rc03 — 2026-08-21
 
 ### Fixed

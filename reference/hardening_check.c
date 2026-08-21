@@ -6,6 +6,9 @@
 #include "ir_internal.h"
 #include "ir_reference_project.h"
 
+#define REF_SERIALIZED_FIRST_ABNORMAL_OFFSET (60U)
+#define REF_SERIALIZED_FATAL_OFFSET          (108U)
+
 static int Check(bool condition, const char *message)
 {
     if (!condition)
@@ -92,6 +95,12 @@ int main(void)
     failed |= Check(IR_ReferenceReadPersistentByte(id1, 0U, &byte_after) &&
                     (byte_after == byte_before), "older pending generation remains readable");
 
+    IR_ReferenceSimulateRestart();
+    failed |= Check(IR_ReferenceLastPersistedRecordId() == id2,
+                    "restart reconstructs newest persistent allocation state");
+    failed |= Check(IR_ReferenceReadPersistentByte(id1, 0U, &byte_after),
+                    "restart preserves older pending generation");
+
     FillSource(&source, 102U);
     failed |= Check(config->persistence->persist(&source) == IR_NOT_AVAILABLE,
                     "journal refuses to overwrite two pending generations");
@@ -124,6 +133,22 @@ int main(void)
                     "recovery rejects payload-only incomplete slot");
 
     IR_ReferenceResetPersistentStore();
+
+    /* Unpublished protected payload bytes must not be copied into a persistence image. */
+    g_ir_retained.first_abnormal.magic = 0xA5A5A5A5UL;
+    g_ir_retained.fatal_snapshot.pc = 0x5A5A5A5AUL;
+    g_ir_retained.header.first_abnormal_state = IR_STATE_FIRST_EMPTY;
+    g_ir_retained.header.fatal_state = IR_STATE_FATAL_EMPTY;
+    g_ir_retained.header.state_flags |= IR_STATE_PERSIST_REQUESTED;
+    IR_ServiceProcess();
+    id1 = IR_ReferenceLastPersistedRecordId();
+    failed |= Check(IR_ReferenceReadPersistentByte(id1, REF_SERIALIZED_FIRST_ABNORMAL_OFFSET, &byte_after) &&
+                    (byte_after == 0U), "invalid First-Abnormal payload is not copied");
+    failed |= Check(IR_ReferenceReadPersistentByte(id1, REF_SERIALIZED_FATAL_OFFSET, &byte_after) &&
+                    (byte_after == 0U), "invalid Fatal payload is not copied");
+    IR_ReferenceResetPersistentStore();
+    memset(&g_ir_retained.first_abnormal, 0, sizeof(g_ir_retained.first_abnormal));
+    memset(&g_ir_retained.fatal_snapshot, 0, sizeof(g_ir_retained.fatal_snapshot));
 
     fatal1.pc = 0x111U;
     fatal2.pc = 0x222U;

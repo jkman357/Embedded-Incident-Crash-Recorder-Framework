@@ -40,7 +40,7 @@ run() {
 }
 
 {
-  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc03"
+  echo "Embedded Incident & Crash Recorder Framework v1.0.0rc04"
   echo "Reference build compiler: $($CC --version | head -1)"
   echo
 } | tee -a "$VALIDATION/build.log"
@@ -78,6 +78,14 @@ run "$CC" -std=c99 -Wall -Wextra -Wpedantic -Werror -O2 \
   "${SOURCES[@]}" \
   -o "$BUILD/release/ir_reference_c99"
 run "$BUILD/release/ir_reference_c99"
+
+# Configuration-width gate: retry intervals above 8-bit range must remain exact.
+run "$CC" "${COMMON[@]}" \
+  -DIR_PERSIST_RETRY_INTERVAL_CALLS=1000U \
+  -DIR_EXPORT_RETRY_INTERVAL_CALLS=1000U \
+  "${SOURCES[@]}" \
+  -o "$BUILD/release/ir_reference_wide_retry"
+run "$BUILD/release/ir_reference_wide_retry"
 
 # Review-closure fixture: queue metadata corruption, bounded journal retention,
 # interrupted persistence recovery, fatal one-shot publication, and pause-loss accounting.
@@ -136,19 +144,50 @@ if nm "$BUILD/off/ir_reference_off" | grep -Eq 'g_ir_retained|g_slots|g_ir_task_
   exit 1
 fi
 
+if ! grep -q 'PENDING TARGET EVIDENCE' "$ROOT/target-validation/RESULTS_TEMPLATE.md"; then
+  echo "FAIL: target results template must remain explicitly pending in the source package" | tee -a "$VALIDATION/build.log"
+  exit 1
+fi
+
+if ! grep -q 'require GCC or Clang builtins' "$ROOT/reference/ir_reference_project.c"; then
+  echo "FAIL: reference atomic/publication toolchain must fail closed when unsupported" | tee -a "$VALIDATION/build.log"
+  exit 1
+fi
+
 {
   echo "PASS: Release continuous-trace queue compiled out; Development queue present"
   echo "PASS: Full Recorder-OFF source set builds/runs and contains no retained recorder store"
   echo "PASS: Public probe macros do not evaluate arguments when IR_ENABLE=0"
-  echo "PASS: Hardening fixture covers Development queue bounds, two-slot pending retention, interrupted persistence recovery, fatal one-shot publication, and persistence-pause loss accounting"
+  echo "PASS: Hardening fixture covers Development queue bounds, two-slot pending retention, restart reconstruction, interrupted persistence recovery, unpublished protected-snapshot suppression, fatal one-shot publication, and persistence-pause loss accounting"
   echo "PASS: Hardening fixture passes AddressSanitizer/UndefinedBehaviorSanitizer"
-  echo "PASS: release/development/off builds, C99 compatibility, runtime checks, retained size guard, and MAP section check"
+  echo "PASS: release/development/off builds, C99 compatibility, wide retry configuration, runtime checks, retained size guard, and MAP section check"
+  echo "PASS: Target results template remains PENDING TARGET EVIDENCE in source package"
+  echo "PASS: Unsupported reference atomic/publication toolchains fail closed"
 } | tee -a "$VALIDATION/build.log"
+
+cat > "$VALIDATION/host_pre_target_gate.txt" <<'EOF'
+Embedded Incident & Crash Recorder Framework v1.0.0rc04
+Host Pre-Target Gate
+
+Release build/run: PASS
+Development build/run: PASS
+Recorder-OFF build/run: PASS
+C99/C11 host compatibility: PASS
+Wide retry configuration (>255 calls): PASS
+Hardening fixture: PASS
+ASan/UBSan hardening fixture: PASS
+Retained size/MAP gate: PASS
+rc03 Minor source closure: PASS
+Target validation evidence: PENDING
+
+This file is host/source evidence only. It does not claim real-target retention, timing, NVM, export, SD/filesystem, or observer-effect validation.
+EOF
 
 # Keep published validation artifacts independent of the local checkout path.
 for file in "$VALIDATION/build.log" "$VALIDATION/reference_release.map" \
             "$VALIDATION/reference_development.map" "$VALIDATION/reference_off.map" \
             "$VALIDATION/reference_hardening.map" "$VALIDATION/section_report.txt" \
-            "$VALIDATION/size_report.txt" "$VALIDATION/hardening_disassembly.txt"; do
+            "$VALIDATION/size_report.txt" "$VALIDATION/hardening_disassembly.txt" \
+            "$VALIDATION/host_pre_target_gate.txt"; do
   sed -i "s|$ROOT|.|g" "$file"
 done

@@ -1,12 +1,12 @@
 # Embedded Incident & Crash Recorder Framework
 ## Low-Coupling Evidence, First-Abnormal-State, Survivability & Recovery Architecture
 
-**Version:** v1.0.0rc03
-**Status:** Reference Implementation Release Candidate — Hardening & Contract Closure
+**Version:** v1.0.0rc04
+**Status:** Target Validation Candidate — Host Pre-Gate Complete; Target Evidence Pending
 **Date:** 2026-08-21  
 **Scope:** Generic embedded systems; independent of specific MCU, RTOS, storage medium, communication bus, motor controller, sensor, company, or product.
 
-**Release type:** Specification + reference-implementation hardening RC. This RC preserves the public architecture baseline, closes the rc02 independent-review findings, strengthens recorder self-protection and persistence semantics, and regenerates host validation evidence before target validation.
+**Release type:** Target-validation candidate RC. This RC preserves the public architecture baseline, closes the four Minor findings from the rc03 independent review, adds an explicit target-validation evidence package, and keeps all real-target results marked pending until measured on a concrete integration.
 
 ---
 
@@ -18,6 +18,7 @@ The public release-candidate sequence starts at:
 v1.0.0rc01
 v1.0.0rc02
 v1.0.0rc03
+v1.0.0rc04
 ...
 v1.0.0
 ```
@@ -45,6 +46,7 @@ This RC has **one canonical definition per topic**.
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline for low-coupling evidence capture, first-abnormal-state localization, survivability, persistence, compile-time Development/Release storage profiles, and transactional evidence export. |
 | v1.0.0rc02 | 2026-08-21 | Minimal reference implementation: Task/ISR rings, first-abnormal latch, fatal snapshot, retained 10 KiB store, persistence/export boundaries, Development trace queue, Release on-demand export, and host build/MAP/size validation. |
 | v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and contract closure: Development trace metadata self-protection, bounded two-slot persistent journal, interrupted-write recovery, persistence-pause loss accounting, dedicated fatal publication state, explicit publication barrier contract, full Recorder-OFF build gate, and sanitizer-backed hardening checks. |
+| v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline: closes rc03 Minor findings, strengthens host restart/identity behavior, separates persistence/export retry configuration, suppresses unpublished protected-snapshot copies, and adds explicit target-validation plan/checklist/results templates. Real target evidence remains pending. |
 
 ### Roadmap
 
@@ -52,11 +54,11 @@ This RC has **one canonical definition per topic**.
 v1.0.0rc01  Initial public specification baseline
 v1.0.0rc02  Minimal reference implementation
 v1.0.0rc03  Reference implementation hardening & contract closure
-v1.0.0rc04  Known-root-cause + observer-effect target validation
-v1.0.0      Stabilized baseline
+v1.0.0rc04  Target-validation candidate + observer-effect evidence contract
+v1.0.0      Stabilized baseline after target evidence closure
 ```
 
-**Current milestone:** `v1.0.0rc03` closes the implementation-level findings identified by the rc02 independent review. Formal target validation is deferred to `v1.0.0rc04`.
+**Current milestone:** `v1.0.0rc04` is the immutable source baseline to be used for formal target validation. Host/source pre-gates pass; target retention, timing, NVM, export, Development-trace, and observer-effect evidence remain `PENDING TARGET EVIDENCE` until measured on a concrete integration.
 
 ---
 
@@ -2777,7 +2779,7 @@ However, during RC convergence, maintaining **one unified document** is preferre
 
 # Part J — RC Exit Criteria
 
-Before promoting `v1.0.0rc03` to target-validation work in `v1.0.0rc04`:
+Before executing formal target validation against `v1.0.0rc04`:
 
 ```text
 - Release reference build compiles and runs with warnings treated as errors
@@ -2799,24 +2801,30 @@ Before promoting `v1.0.0rc03` to target-validation work in `v1.0.0rc04`:
 - successful export does not delete the persistent evidence payload
 - public-release audit finds no company/product/project-specific identifiers or private implementation fingerprints
 - README/LICENSE copyright and licensing statements are consistent
+- the public reference fails closed on unsupported host atomic/publication toolchains rather than silently weakening semantics
+- reference journal generation ordering no longer depends on unsigned-to-signed conversion; the reference generation counter is widened and volatile allocation state is reconstructed from committed slots
+- live public record IDs are allocated without collision across the bounded journal
+- persistence and export retry countdowns preserve configured values beyond 8-bit range
+- unpublished First-Abnormal/Fatal payload bytes are not copied into a persistence source image
+- target-validation plan, integration checklist, and results template are present and contain no pre-filled target PASS claims
 ```
 
-The host reference build validates structural, defensive-correctness, persistence-model, and service-sequencing contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect remain `v1.0.0rc04` target-validation responsibilities.
+The host reference build validates structural, defensive-correctness, persistence-model, service-sequencing, and rc03-Minor closure contracts. MCU-specific linker/startup retention, interrupt timing, storage timing/endurance, real SD/filesystem behavior, and observer effect are deliberately not claimed by the source package; they must be recorded using the rc04 target-validation evidence contract.
 
 # Part K — Document Status
 
-**Current:** `v1.0.0rc03`
+**Current:** `v1.0.0rc04`
 
-This is the **Reference Implementation Hardening & Contract Closure Release Candidate**.
+This is the **Target Validation Candidate Release Candidate**.
 
-The public architecture remains generic. The reference implementation now includes the defensive and persistence corrections required by the rc02 independent review, plus regenerated host validation evidence.
+The public architecture remains generic. The source baseline includes the rc03 independent-review Minor closures and the validation artifacts needed to begin target integration. It does not claim real-target PASS results without external target evidence.
 
 Future revisions:
 
 ```text
-v1.0.0rc04  Known-root-cause + observer-effect target validation
-...
-v1.0.0      Stable baseline
+v1.0.0rc04  Target-validation candidate + target evidence execution
+future RC    Only if target evidence requires source correction
+v1.0.0      Stable baseline after target evidence closure
 ```
 
 Do not edit an archived RC in place.
@@ -3349,19 +3357,21 @@ The emphasis remains:
 | v1.0.0rc01 | 2026-08-21 | Initial public specification baseline |
 | v1.0.0rc02 | 2026-08-21 | Minimal reference implementation plus compile/link/MAP/size validation |
 | v1.0.0rc03 | 2026-08-21 | Reference implementation hardening and independent-review contract closure |
+| v1.0.0rc04 | 2026-08-21 | Target-validation candidate baseline, rc03 Minor closure, and target evidence contract |
 
 Planned direction:
 
 ```text
-v1.0.0rc04 → known-root-cause + observer-effect target validation
-v1.0.0     → stabilized framework baseline
+rc04 target evidence → execute against immutable rc04 source identity
+future RC            → only if target evidence requires source correction
+v1.0.0               → stabilized framework baseline after target evidence closure
 ```
 
 # Part P — Implementation Contract
 
 ## P1. Implementation Objective
 
-`v1.0.0rc03` hardens the public reference implementation without binding the framework to a specific MCU, RTOS, storage technology, peripheral, company, or product. It implements the selected Task/ISR/Fatal writer topology, bounded retained store, compile-time storage profiles, persistence/export service boundaries, and failure-isolated Development/Release paths while keeping platform-specific mechanisms behind adapters.
+`v1.0.0rc04` keeps the hardened public reference implementation independent of a specific MCU, RTOS, storage technology, peripheral, company, or product. It adds only source-level closure and a target-validation evidence contract; platform-specific mechanisms and measured acceptance limits remain owned by the concrete target integration.
 
 The implementation model is:
 
@@ -3736,7 +3746,7 @@ schema-versioned at container level
 
 ## T2. Selected 24-Byte Runtime Record
 
-`v1.0.0rc03` retains the frozen reference runtime timeline record as:
+`v1.0.0rc04` retains the frozen reference runtime timeline record as:
 
 ```c
 typedef struct
@@ -4474,7 +4484,7 @@ incident ID
 health/lost counters
 ```
 
-The rc03 reference uses modulo-2^32 unsigned wrap for Task/ISR local sequence, epoch ID, incident ID, fatal publish sequence, and persistent reference generation/record IDs. Diagnostic loss counters saturate at `UINT32_MAX`. The decoder must use wrap-aware ordering logic and must not assume these values never wrap.
+The rc04 core uses modulo-2^32 unsigned wrap for Task/ISR local sequence, epoch ID, incident ID, and fatal publish sequence. Diagnostic loss counters saturate at `UINT32_MAX`. The host reference journal uses a 64-bit monotonic generation for slot ordering and allocates non-zero 32-bit public record IDs while skipping IDs already used by live slots. A target journal must explicitly define its own wrap/identity invariant; decoders must not assume identifiers never wrap.
 
 ---
 
@@ -4828,11 +4838,11 @@ void PlatformFatalHandler(const PlatformFaultFrame *platform_fault)
 [x] README and included MIT LICENSE are consistent
 ```
 
-Target timing and physical retention guarantees remain intentionally open for `v1.0.0rc04`.
+Target timing and physical retention guarantees remain intentionally open until concrete rc04 target evidence is supplied.
 
 # Part AI — Current Non-Goals
 
-`v1.0.0rc03` does not yet claim:
+`v1.0.0rc04` source package does not claim:
 
 ```text
 target-verified linker memory placement or startup retention behavior
@@ -4897,7 +4907,7 @@ The implementation continues to prioritize:
 
 > Recorder, persistence, SD, and export failures must not become product failures or timing dependencies.
 
-The next formal milestone is `v1.0.0rc04`: real-target known-root-cause and observer-effect validation.
+The next formal activity is execution of the rc04 target-validation plan against a concrete embedded integration. The immutable rc04 source identity must be recorded in the target result artifact.
 
 # Part AK — Storage Operating Modes & Evidence Export Contract
 
@@ -5568,32 +5578,113 @@ or:
 
 The script regenerates all published host validation evidence and fails if any reference, OFF, hardening, sanitizer, retained-size, profile-separation, or MAP gate fails.
 
-# Appendix A — Planned Next RCs (Non-Normative)
+# Part AN — v1.0.0rc04 Target Validation Candidate Baseline
 
-## v1.0.0rc04 — Target Validation
+## AN1. rc03 Independent-Review Gate
 
-Expected validation:
+The rc03 independent review reported:
 
 ```text
-known defect + recorder OFF
-known defect + recorder ON
-fixed firmware + recorder ON
-execution-time audit
-stack audit
-ISR latency
-critical-section / atomic-claim / publication-barrier timing
-NVM stall/read-while-write behavior
-early-boot reset/fault injection
-persistent transaction interruption testing on actual target NVM
-recorder-metadata corruption injection
-event-flood/coalescing test
-Development continuous-SD observer-effect test
-SD absent/removed/full/write-failure test
-Release build confirms continuous trace remains compiled out
-service/LCD persistent-storage-to-SD transactional export test
+Overall verdict: PASS WITH FINDINGS
+Critical: 0
+Major: 0
+Minor: 4
+RC03 → TARGET VALIDATION GATE: YES
 ```
 
-The goal is to show that the hardened recorder remains a low-coupling observer on real embedded hardware while preserving useful evidence across both storage build profiles.
+rc04 closes those four source-level Minor findings before target execution.
+
+## AN2. Minor-Finding Closure
+
+```text
+Compiler primitive fallback
+→ host reference supports GCC/Clang atomic builtins only
+→ other toolchains fail closed instead of silently using weaker semantics
+
+Journal identity/order
+→ slot generation widened to uint64_t
+→ direct generation ordering; no unsigned-to-signed conversion
+→ restart recovery reconstructs volatile allocator state from newest committed slot
+→ non-zero public record IDs skip IDs already used by live slots
+
+Retry configuration
+→ persistence and export retry intervals are separate compile-time settings
+→ runtime countdowns are uint32_t
+→ host build validates values greater than 255 without truncation
+
+Protected snapshot persistence
+→ First-Abnormal payload copied only when authoritative First-Abnormal validity is true
+→ Fatal payload copied only when authoritative Fatal validity is true
+→ invalid/unpublished protected payload fields remain zero in the persistence source
+```
+
+## AN3. Host Pre-Target Validation Result
+
+The rc04 host gate validates:
+
+```text
+Release build/run                     PASS
+Development build/run                 PASS
+Full Recorder-OFF build/run           PASS
+Recorder-OFF macro non-evaluation     PASS
+C99 compatibility                     PASS
+C11 warnings-as-errors                PASS
+Wide retry configuration (>255)       PASS
+Hardening regression fixture          PASS
+ASan/UBSan hardening fixture          PASS
+Restart allocator reconstruction      PASS
+Unpublished protected-copy suppression PASS
+Retained-size / MAP section gates     PASS
+```
+
+These are host/source results only. They are not substitutes for target timing, retention, NVM, or SD/filesystem evidence.
+
+## AN4. Target Validation Evidence Contract
+
+The source package includes:
+
+```text
+target-validation/README.md
+target-validation/PLAN.md
+target-validation/INTEGRATION_CHECKLIST.md
+target-validation/RESULTS_TEMPLATE.md
+```
+
+`RESULTS_TEMPLATE.md` intentionally contains `PENDING TARGET EVIDENCE`. A target PASS must not be inferred from host validation.
+
+Target results should be retained as a separate evidence artifact that identifies the exact immutable rc04 source ZIP hash or repository commit. If target findings require source changes, create a later RC rather than modifying rc04 in place.
+
+## AN5. rc04 Target Gate
+
+The target-validation result must cover the in-scope items defined in `target-validation/PLAN.md`, including:
+
+```text
+retained RAM placement and reset-class survival
+Task/ISR probe and critical-section timing
+Fatal claim/publication target semantics
+Recorder OFF vs Release ON observer-effect comparison
+Development observer effect when applicable
+real NVM transaction / interruption / recovery
+capacity pressure / pending-evidence retention
+explicit export success and failure isolation
+known-root-cause OFF / ON / fixed comparison
+```
+
+Missing target evidence is `PENDING`, never `PASS`.
+
+---
+
+# Appendix A — Target Validation and Stabilization Path (Non-Normative)
+
+## rc04 Target Evidence Execution
+
+Run the immutable rc04 source baseline on the concrete target using `target-validation/PLAN.md` and record results in a separate target evidence artifact.
+
+If the target evidence exposes a source/specification defect, create the next RC and repeat the affected validation.
+
+If the target evidence closes without source changes, rc04 may become the implementation source basis for the `v1.0.0` stabilization decision.
+
+The framework does not equate host build success with target validation.
 
 
 Copyright © 2026 Ray Yang.  
